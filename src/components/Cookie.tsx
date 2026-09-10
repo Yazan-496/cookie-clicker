@@ -133,11 +133,19 @@ export function Cookie({ onTap, tier, tapValue, celebrating }: Props) {
       style={{ '--tier-glow': tier.glow } as React.CSSProperties}
     >
       <span className="cookie-glow" aria-hidden="true" />
+      {celebrating && <span className="cookie-burst" aria-hidden="true" />}
 
       <span
         className={`cookie-body idle-${tier.idle} ${
           hitRing !== null ? `hit hit-${hitRing}` : ''
-        }`}
+        } ${celebrating ? 'is-celebrating' : ''}`}
+        style={
+          {
+            '--push-x': `${push.x}px`,
+            '--push-y': `${push.y}px`,
+            '--push-tilt': `${push.tilt}deg`,
+          } as React.CSSProperties
+        }
         aria-hidden="true"
       >
         <svg viewBox="0 0 100 100" className="cookie-art">

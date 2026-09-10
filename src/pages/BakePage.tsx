@@ -17,6 +17,7 @@ interface Props {
   onBake: () => void
   onTap: (ring: number) => void
   tier: CookieTier
+  celebrating: boolean
   onDismissGasHelp: () => void
   walletError: string | null
 }
@@ -31,6 +32,7 @@ export function BakePage({
   onBake,
   onTap,
   tier,
+  celebrating,
   onDismissGasHelp,
   walletError,
 }: Props) {
@@ -58,7 +60,12 @@ export function BakePage({
 
       <LevelBar progress={game.progress} />
 
-      <Cookie onTap={onTap} tier={tier} tapValue={game.tapValue} />
+      <Cookie
+        onTap={onTap}
+        tier={tier}
+        tapValue={game.tapValue}
+        celebrating={celebrating}
+      />
 
       <span className="tier-name">
         {tier.name}

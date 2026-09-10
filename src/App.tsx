@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectButton } from './components/ConnectButton'
 import { Controls } from './components/Controls'
 import { Leaderboard } from './components/Leaderboard'
 import { TabBar, type Tab } from './components/TabBar'
+import { TierUp } from './components/TierUp'
 import { BakePage } from './pages/BakePage'
 import { BoardPage } from './pages/BoardPage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -35,6 +36,26 @@ export default function App() {
   const [showGasHelp, setShowGasHelp] = useState(false)
 
   const tier = useMemo(() => tierFor(game.progress.level), [game.progress.level])
+
+  // Announce a tier change. The ref starts at the loaded tier, so restoring a
+  // high-level save doesn't fire a false unlock on page load.
+  const [tierUp, setTierUp] = useState<typeof tier | null>(null)
+  const seenTier = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (seenTier.current === null) {
+      seenTier.current = tier.id
+      return
+    }
+    if (seenTier.current === tier.id) return
+
+    seenTier.current = tier.id
+    setTierUp(tier)
+    sound.play('success')
+
+    const timer = window.setTimeout(() => setTierUp(null), 4200)
+    return () => window.clearTimeout(timer)
+  }, [tier, sound])
 
   const handleTap = useCallback(
     (ring: number) => {
@@ -139,6 +160,7 @@ export default function App() {
                 onBake={handleBake}
                 onTap={handleTap}
                 tier={tier}
+                celebrating={tierUp !== null}
                 onDismissGasHelp={() => setShowGasHelp(false)}
                 walletError={walletError}
               />
@@ -179,6 +201,8 @@ export default function App() {
           />
         )}
       </main>
+
+      {tierUp && <TierUp tier={tierUp} onDismiss={() => setTierUp(null)} />}
 
       <TabBar active={tab} onChange={setTab} shopAlert={shopAlert} />
     </div>
