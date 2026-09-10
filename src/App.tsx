@@ -146,7 +146,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="main">
+      <main className={`main ${tab === 'bake' ? 'is-fixed' : ''}`}>
         {tab === 'bake' && (
           <div className="split">
             <div className="split-main">
