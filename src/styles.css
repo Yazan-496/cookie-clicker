@@ -634,6 +634,13 @@ body {
   color: var(--text-dim);
 }
 
+.play-hint {
+  margin-top: -12px;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
 .rate-passive.is-idle {
   color: var(--text-dim);
   border-color: var(--border);
@@ -663,23 +670,148 @@ body {
 }
 
 /*
- * Restrained on purpose. A tap happens many times a minute, so anything
- * theatrical becomes tiring within seconds — a small, fast press with one
- * gentle settle reads as responsive without demanding attention.
+ * Five rings, five notes, five reactions.
+ *
+ * Each ring gets its own movement so the cookie reads as an instrument rather
+ * than one button — you can see which note you hit as well as hear it. All of
+ * them stay small: this fires many times a minute.
  */
-@keyframes squash {
+.cookie-body.hit {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 0.9, 0.32, 1);
+  animation-fill-mode: both;
+}
+
+.hit-0 {
+  animation-name: hit-press;
+}
+.hit-1 {
+  animation-name: hit-tilt-left;
+}
+.hit-2 {
+  animation-name: hit-stretch;
+}
+.hit-3 {
+  animation-name: hit-tilt-right;
+}
+.hit-4 {
+  animation-name: hit-swing;
+}
+
+/* do — a straight, contained press */
+@keyframes hit-press {
   0% {
     transform: scale(1, 1);
   }
-  26% {
-    transform: scale(1.05, 0.95);
-  }
-  62% {
-    transform: scale(0.99, 1.01);
+  28% {
+    transform: scale(0.94, 0.94);
   }
   100% {
     transform: scale(1, 1);
   }
+}
+
+/* re — leans left */
+@keyframes hit-tilt-left {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  30% {
+    transform: rotate(-4deg) scale(1.03, 0.97);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* mi — squashes wide */
+@keyframes hit-stretch {
+  0% {
+    transform: scale(1, 1);
+  }
+  28% {
+    transform: scale(1.07, 0.93);
+  }
+  64% {
+    transform: scale(0.98, 1.02);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+/* fa — leans right */
+@keyframes hit-tilt-right {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  30% {
+    transform: rotate(4deg) scale(1.03, 0.97);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* sol — the rim, so it swings furthest */
+@keyframes hit-swing {
+  0% {
+    transform: rotate(0deg) translateY(0) scale(1);
+  }
+  26% {
+    transform: rotate(-5deg) translateY(2px) scale(1.05, 0.95);
+  }
+  62% {
+    transform: rotate(3deg) translateY(-1px) scale(0.98, 1.02);
+  }
+  100% {
+    transform: rotate(0deg) translateY(0) scale(1);
+  }
+}
+
+/* ---------- ring guides ---------- */
+
+.ring-guide {
+  stroke-width: 0.7;
+  opacity: 0.14;
+  transition: opacity 0.2s ease, stroke-width 0.2s ease;
+}
+
+.ring-guide.is-hit {
+  opacity: 0.85;
+  stroke-width: 2.4;
+}
+
+.cookie:hover .ring-guide {
+  opacity: 0.26;
+}
+
+.pop-note {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* Outer rings throw a wider ripple than the centre. */
+.ripple-0 {
+  --ripple-scale: 3;
+}
+.ripple-1 {
+  --ripple-scale: 4;
+}
+.ripple-2 {
+  --ripple-scale: 5;
+}
+.ripple-3 {
+  --ripple-scale: 6;
+}
+.ripple-4 {
+  --ripple-scale: 7.5;
 }
 
 @keyframes hover-float {
@@ -719,7 +851,7 @@ body {
 
 @keyframes ripple-out {
   to {
-    transform: scale(5.5);
+    transform: scale(var(--ripple-scale, 5.5));
     opacity: 0;
     border-width: 0.5px;
   }

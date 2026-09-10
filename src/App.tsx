@@ -36,10 +36,13 @@ export default function App() {
 
   const tier = useMemo(() => tierFor(game.progress.level), [game.progress.level])
 
-  const handleTap = useCallback(() => {
-    game.tap()
-    sound.play('tap')
-  }, [game, sound])
+  const handleTap = useCallback(
+    (ring: number) => {
+      game.tap()
+      sound.playNote(ring)
+    },
+    [game, sound],
+  )
 
   const handleBuy = useCallback(
     (id: string) => {

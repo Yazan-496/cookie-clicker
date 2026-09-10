@@ -15,7 +15,7 @@ interface Props {
   canBake: boolean
   showGasHelp: boolean
   onBake: () => void
-  onTap: () => void
+  onTap: (ring: number) => void
   tier: CookieTier
   onDismissGasHelp: () => void
   walletError: string | null
@@ -65,6 +65,10 @@ export function BakePage({
         {upcoming && (
           <span className="tier-next"> · {upcoming.name} at level {upcoming.minLevel}</span>
         )}
+      </span>
+
+      <span className="play-hint">
+        Five rings, five notes — do re mi fa sol from the centre out
       </span>
 
       <span className="score-verified">

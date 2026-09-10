@@ -4,6 +4,21 @@ const STORAGE_KEY = 'cookie-clicker:audio'
 
 export type SoundName = 'tap' | 'buy' | 'success' | 'error'
 
+/**
+ * C-major, one note per ring from the centre outwards. A plain major scale
+ * means any order of taps sounds consonant, so the cookie is playable rather
+ * than merely noisy.
+ */
+export const RING_NOTES = [
+  { name: 'do', freq: 523.25 },
+  { name: 're', freq: 587.33 },
+  { name: 'mi', freq: 659.25 },
+  { name: 'fa', freq: 698.46 },
+  { name: 'sol', freq: 783.99 },
+] as const
+
+export const RING_COUNT = RING_NOTES.length
+
 interface AudioPrefs {
   muted: boolean
   volume: number
@@ -99,7 +114,6 @@ export function useSound() {
 
       switch (name) {
         case 'tap': {
-          // Cycle through a small set of pitches so rapid tapping stays musical.
           const steps = [0, 2, 4, 5, 7]
           const semitone = steps[tapCount.current % steps.length]
           tapCount.current += 1
@@ -126,6 +140,28 @@ export function useSound() {
     [context, prefs.muted, prefs.volume, tone],
   )
 
+  /**
+   * Plays the note belonging to a ring. Two voices — a triangle body plus a
+   * quiet sine an octave up — give it a struck, bell-like edge rather than the
+   * flat buzz a single oscillator produces.
+   */
+  const playNote = useCallback(
+    (ring: number) => {
+      if (prefs.muted || prefs.volume <= 0) return
+      const ctx = context()
+      if (!ctx) return
+
+      const note = RING_NOTES[Math.max(0, Math.min(RING_COUNT - 1, ring))]
+      const now = ctx.currentTime
+      const v = prefs.volume
+
+      tone(ctx, note.freq, now, 0.24, 'triangle', 0.17 * v)
+      tone(ctx, note.freq * 2, now, 0.12, 'sine', 0.055 * v)
+      tone(ctx, note.freq * 3, now, 0.06, 'sine', 0.02 * v)
+    },
+    [context, prefs.muted, prefs.volume, tone],
+  )
+
   const setVolume = useCallback((volume: number) => {
     setPrefs((p) => ({ ...p, volume, muted: volume === 0 ? p.muted : false }))
   }, [])
@@ -134,5 +170,12 @@ export function useSound() {
     setPrefs((p) => ({ ...p, muted: !p.muted }))
   }, [])
 
-  return { play, volume: prefs.volume, muted: prefs.muted, setVolume, toggleMute }
+  return {
+    play,
+    playNote,
+    volume: prefs.volume,
+    muted: prefs.muted,
+    setVolume,
+    toggleMute,
+  }
 }

@@ -1,10 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { chipLayout, type CookieTier } from '../lib/cookieTiers'
+import { RING_COUNT, RING_NOTES } from '../hooks/useSound'
 
 interface Props {
-  onTap: () => void
+  onTap: (ring: number) => void
   tier: CookieTier
-  /** Cookies this tap is actually worth — upgrades raise it above 1. */
   tapValue: number
 }
 
@@ -16,24 +16,37 @@ interface Particle {
   dy: number
   rotate: number
   scale: number
+  ring: number
 }
 
 interface Ripple {
   id: number
   x: number
   y: number
+  ring: number
 }
 
 const CRUMBS_PER_TAP = 3
-const PARTICLE_MS = 620
-const SQUASH_MS = 200
+const PARTICLE_MS = 700
+const HIT_MS = 320
+
+/** Ring boundaries as a fraction of the cookie radius, centre outwards. */
+const RING_EDGES = [0.22, 0.42, 0.62, 0.82, 1]
+
+function ringAt(dx: number, dy: number, radius: number): number {
+  const fraction = Math.min(1, Math.hypot(dx, dy) / radius)
+  for (let i = 0; i < RING_EDGES.length; i += 1) {
+    if (fraction <= RING_EDGES[i]) return i
+  }
+  return RING_COUNT - 1
+}
 
 export function Cookie({ onTap, tier, tapValue }: Props) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [ripples, setRipples] = useState<Ripple[]>([])
-  const [squashing, setSquashing] = useState(false)
+  const [hitRing, setHitRing] = useState<number | null>(null)
   const nextId = useRef(0)
-  const squashTimer = useRef<number | null>(null)
+  const hitTimer = useRef<number | null>(null)
 
   const chips = chipLayout(tier.chipCount)
 
@@ -43,12 +56,18 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
       const x = event.clientX - rect.left
       const y = event.clientY - rect.top
 
+      const radius = rect.width / 2
+      const ring = ringAt(x - radius, y - radius, radius)
+
+      // Outer rings fling crumbs further; the centre press is more contained.
+      const spread = 16 + ring * 9
+
       const batch: Particle[] = [
-        { id: nextId.current++, x, y, dx: 0, dy: -54, rotate: 0, scale: 1 },
+        { id: nextId.current++, x, y, dx: 0, dy: -54, rotate: 0, scale: 1, ring },
       ]
       for (let i = 0; i < CRUMBS_PER_TAP; i += 1) {
         const angle = (Math.PI * 2 * i) / CRUMBS_PER_TAP + Math.random() * 0.9
-        const distance = 22 + Math.random() * 18
+        const distance = spread + Math.random() * 18
         batch.push({
           id: nextId.current++,
           x,
@@ -57,10 +76,11 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
           dy: Math.sin(angle) * distance - 12,
           rotate: (Math.random() - 0.5) * 140,
           scale: 0.45 + Math.random() * 0.35,
+          ring,
         })
       }
 
-      const ripple: Ripple = { id: nextId.current++, x, y }
+      const ripple: Ripple = { id: nextId.current++, x, y, ring }
 
       setParticles((prev) => [...prev, ...batch])
       setRipples((prev) => [...prev, ripple])
@@ -71,12 +91,12 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
         setRipples((prev) => prev.filter((r) => r.id !== ripple.id))
       }, PARTICLE_MS)
 
-      setSquashing(false)
-      if (squashTimer.current) window.clearTimeout(squashTimer.current)
-      requestAnimationFrame(() => setSquashing(true))
-      squashTimer.current = window.setTimeout(() => setSquashing(false), SQUASH_MS)
+      setHitRing(null)
+      if (hitTimer.current) window.clearTimeout(hitTimer.current)
+      requestAnimationFrame(() => setHitRing(ring))
+      hitTimer.current = window.setTimeout(() => setHitRing(null), HIT_MS)
 
-      onTap()
+      onTap(ring)
     },
     [onTap],
   )
@@ -87,13 +107,15 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
     <button
       className="cookie"
       onPointerDown={handleTap}
-      aria-label={`Tap to bake a cookie — ${tier.name}`}
+      aria-label={`Tap to bake — five rings play do, re, mi, fa, sol from the centre out`}
       style={{ '--tier-glow': tier.glow } as React.CSSProperties}
     >
       <span className="cookie-glow" aria-hidden="true" />
 
       <span
-        className={`cookie-body idle-${tier.idle} ${squashing ? 'is-squashing' : ''}`}
+        className={`cookie-body idle-${tier.idle} ${
+          hitRing !== null ? `hit hit-${hitRing}` : ''
+        }`}
         aria-hidden="true"
       >
         <svg viewBox="0 0 100 100" className="cookie-art">
@@ -148,12 +170,7 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
                 fill={tier.rim}
                 opacity="0.45"
               />
-              <circle
-                cx={chip.cx}
-                cy={chip.cy}
-                r={chip.r}
-                fill={`url(#${gid}-chip)`}
-              />
+              <circle cx={chip.cx} cy={chip.cy} r={chip.r} fill={`url(#${gid}-chip)`} />
               <circle
                 cx={chip.cx - chip.r * 0.3}
                 cy={chip.cy - chip.r * 0.35}
@@ -162,6 +179,19 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
                 opacity="0.22"
               />
             </g>
+          ))}
+
+          {/* Ring guides — faint until struck, so the cookie reads as playable */}
+          {RING_EDGES.map((edge, index) => (
+            <circle
+              key={edge}
+              className={`ring-guide ${hitRing === index ? 'is-hit' : ''}`}
+              cx="50"
+              cy="50"
+              r={edge * 46}
+              fill="none"
+              stroke="#fff"
+            />
           ))}
 
           {tier.flourish === 'sparkle' && (
@@ -177,7 +207,7 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
       {ripples.map((ripple) => (
         <span
           key={ripple.id}
-          className="ripple"
+          className={`ripple ripple-${ripple.ring}`}
           style={{ left: ripple.x, top: ripple.y }}
           aria-hidden="true"
         />
@@ -201,7 +231,12 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
           }
           aria-hidden="true"
         >
-          {particle.dx === 0 ? `+${tapValue.toLocaleString()}` : ''}
+          {particle.dx === 0 && (
+            <>
+              +{tapValue.toLocaleString()}
+              <span className="pop-note">{RING_NOTES[particle.ring].name}</span>
+            </>
+          )}
         </span>
       ))}
     </button>
