@@ -1,3 +1,6 @@
+import type { JSX } from 'react'
+import { BakeryIcon, BoardIcon, CookieIcon, ProfileIcon } from './icons'
+
 export type Tab = 'bake' | 'shop' | 'board' | 'profile'
 
 interface Props {
@@ -7,28 +10,28 @@ interface Props {
   shopAlert?: boolean
 }
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'bake', label: 'Bake', icon: '🍪' },
-  { id: 'shop', label: 'Bakery', icon: '🛒' },
-  { id: 'board', label: 'Board', icon: '🏆' },
-  { id: 'profile', label: 'Profile', icon: '👤' },
+const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
+  { id: 'bake', label: 'Bake', Icon: CookieIcon },
+  { id: 'shop', label: 'Bakery', Icon: BakeryIcon },
+  { id: 'board', label: 'Board', Icon: BoardIcon },
+  { id: 'profile', label: 'Profile', Icon: ProfileIcon },
 ]
 
 export function TabBar({ active, onChange, shopAlert }: Props) {
   return (
     <nav className="tabbar" aria-label="Main">
-      {TABS.map((tab) => (
+      {TABS.map(({ id, label, Icon }) => (
         <button
-          key={tab.id}
-          className={`tab ${active === tab.id ? 'is-active' : ''}`}
-          onClick={() => onChange(tab.id)}
-          aria-current={active === tab.id ? 'page' : undefined}
+          key={id}
+          className={`tab ${active === id ? 'is-active' : ''}`}
+          onClick={() => onChange(id)}
+          aria-current={active === id ? 'page' : undefined}
         >
-          <span className="tab-icon" aria-hidden="true">
-            {tab.icon}
-            {tab.id === 'shop' && shopAlert && <span className="tab-dot" />}
+          <span className="tab-icon">
+            <Icon />
+            {id === 'shop' && shopAlert && <span className="tab-dot" />}
           </span>
-          <span className="tab-label">{tab.label}</span>
+          <span className="tab-label">{label}</span>
         </button>
       ))}
     </nav>

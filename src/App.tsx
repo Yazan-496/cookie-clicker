@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ConnectButton } from './components/ConnectButton'
+import { Leaderboard } from './components/Leaderboard'
 import { TabBar, type Tab } from './components/TabBar'
 import { BakePage } from './pages/BakePage'
 import { BoardPage } from './pages/BoardPage'
@@ -85,17 +86,36 @@ export default function App() {
 
       <main className="main">
         {tab === 'bake' && (
-          <BakePage
-            game={game}
-            bakeState={bakeState}
-            address={address}
-            onChainScore={onChainScore}
-            canBake={canBake}
-            showGasHelp={showGasHelp}
-            onBake={handleBake}
-            onDismissGasHelp={() => setShowGasHelp(false)}
-            walletError={walletError}
-          />
+          <div className="split">
+            <div className="split-main">
+              <BakePage
+                game={game}
+                bakeState={bakeState}
+                address={address}
+                onChainScore={onChainScore}
+                canBake={canBake}
+                showGasHelp={showGasHelp}
+                onBake={handleBake}
+                onDismissGasHelp={() => setShowGasHelp(false)}
+                walletError={walletError}
+              />
+            </div>
+
+            {/* Wide screens get the standings alongside instead of dead space. */}
+            <aside className="split-aside">
+              <span className="board-caption">Live standings</span>
+              <Leaderboard
+                entries={board.entries}
+                players={board.players}
+                totalBaked={board.totalBaked}
+                bakes={board.bakes}
+                loading={board.loading}
+                error={board.error}
+                currentPlayer={address}
+                onRefresh={board.refresh}
+              />
+            </aside>
+          </div>
         )}
 
         {tab === 'shop' && <ShopPage game={game} />}

@@ -12,7 +12,14 @@ interface Props {
   onRefresh: () => void
 }
 
-const MEDALS = ['🥇', '🥈', '🥉']
+/** Deterministic hue per wallet, so each player keeps a recognisable colour. */
+function hueFor(address: string): number {
+  let hash = 0
+  for (let i = 0; i < address.length; i += 1) {
+    hash = (hash * 31 + address.charCodeAt(i)) % 360
+  }
+  return hash
+}
 
 export function Leaderboard({
   entries,
@@ -24,26 +31,14 @@ export function Leaderboard({
   currentPlayer,
   onRefresh,
 }: Props) {
-  const top = entries.slice(0, 10)
+  const top = entries.slice(0, 15)
   const best = top[0]?.score ?? 1
   const rank = currentPlayer
     ? entries.findIndex((entry) => entry.player === currentPlayer)
     : -1
 
   return (
-    <section className="board">
-      <div className="board-head">
-        <h2 className="board-title">Global leaderboard</h2>
-        <button
-          className="board-refresh"
-          onClick={onRefresh}
-          disabled={loading}
-          aria-label="Refresh leaderboard"
-        >
-          {loading ? '…' : '↻'}
-        </button>
-      </div>
-
+    <div className="board">
       <div className="stats">
         <div className="stat">
           <span className="stat-value">{formatScore(players)}</span>
@@ -57,45 +52,77 @@ export function Leaderboard({
           <span className="stat-value">{formatScore(bakes)}</span>
           <span className="stat-label">bakes</span>
         </div>
-        <div className="stat">
+        <div className="stat stat-you">
           <span className="stat-value">{rank >= 0 ? `#${rank + 1}` : '—'}</span>
           <span className="stat-label">your rank</span>
         </div>
       </div>
 
+      <div className="board-head">
+        <span className="board-caption">
+          {loading ? 'Reading Cookie Chain…' : `Top ${top.length || 0}`}
+        </span>
+        <button
+          className="board-refresh"
+          onClick={onRefresh}
+          disabled={loading}
+          aria-label="Refresh leaderboard"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+            className={loading ? 'is-spinning' : ''}
+          >
+            <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+            <path d="M21 3v6h-6" />
+          </svg>
+        </button>
+      </div>
+
       {error && <p className="hint hint-error">{error}</p>}
 
-      {!error && top.length === 0 && (
-        <p className="hint">
-          {loading
-            ? 'Reading Cookie Chain…'
-            : 'No bakes on-chain yet. Be the first.'}
-        </p>
+      {!error && top.length === 0 && !loading && (
+        <div className="empty">
+          <span className="empty-icon" aria-hidden="true">
+            🏆
+          </span>
+          <p className="empty-title">Nobody has baked yet</p>
+          <p className="empty-body">
+            The first score written to Cookie Chain takes the top spot. It could
+            be yours.
+          </p>
+        </div>
       )}
 
       {top.length > 0 && (
         <ol className="board-list">
           {top.map((entry, index) => {
             const isYou = entry.player === currentPlayer
+            const pct = Math.max(6, (entry.score / best) * 100)
+
             return (
               <li
                 key={entry.player}
-                className={`board-row ${isYou ? 'is-you' : ''}`}
+                className={`board-row rank-${index + 1} ${isYou ? 'is-you' : ''}`}
+                style={
+                  {
+                    '--pct': `${pct}%`,
+                    '--hue': hueFor(entry.player),
+                  } as React.CSSProperties
+                }
               >
-                <span className="board-rank">
-                  {MEDALS[index] ?? `${index + 1}`}
-                </span>
+                <span className="board-rank">{index + 1}</span>
 
-                <span className="board-bar-wrap">
-                  <span className="board-who">
-                    {isYou ? 'You' : shortAddress(entry.player, 4)}
-                  </span>
-                  <span className="board-track">
-                    <span
-                      className="board-fill"
-                      style={{ width: `${Math.max(4, (entry.score / best) * 100)}%` }}
-                    />
-                  </span>
+                <span className="board-avatar" aria-hidden="true" />
+
+                <span className="board-who">
+                  {isYou ? 'You' : shortAddress(entry.player, 4)}
                 </span>
 
                 <a
@@ -103,7 +130,7 @@ export function Leaderboard({
                   href={explorerTxUrl(entry.signature)}
                   target="_blank"
                   rel="noreferrer"
-                  title="View the bake on Cookiescan"
+                  title="View this bake on Cookiescan"
                 >
                   {formatScore(entry.score)}
                 </a>
@@ -113,11 +140,11 @@ export function Leaderboard({
         </ol>
       )}
 
-      <p className="board-note">
-        Ranked by the transaction signer read from Cookie Chain — a memo can
-        claim any score, but only the wallet that signed and paid for it gets
-        the credit.
-      </p>
-    </section>
+      {rank >= top.length && rank >= 0 && (
+        <p className="board-yours">
+          You're #{rank + 1} of {players}. Bake a bigger score to climb.
+        </p>
+      )}
+    </div>
   )
 }

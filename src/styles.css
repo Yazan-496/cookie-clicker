@@ -21,11 +21,24 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg-deep);
   color: var(--text);
   font-family: ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  min-height: 100dvh;
+}
+
+/*
+ * The gradient lives on body, not on the app shell. On a wide monitor a
+ * centred container painted its own background leaves dead bars down both
+ * sides — the page has to be the surface, not the column.
+ */
+body {
+  background:
+    radial-gradient(90% 46% at 50% 0%, #2f1f4a 0%, transparent 62%),
+    radial-gradient(64% 40% at 50% 38%, rgba(255, 181, 69, 0.1) 0%, transparent 72%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
 #root {
@@ -37,14 +50,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  max-width: 480px;
+  max-width: 520px;
   margin: 0 auto;
   padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
   isolation: isolate;
-  background:
-    radial-gradient(120% 60% at 50% 0%, #2a1c42 0%, transparent 60%),
-    radial-gradient(90% 50% at 50% 42%, rgba(255, 181, 69, 0.09) 0%, transparent 70%),
-    var(--bg);
 }
 
 /* ---------- network warning ---------- */
@@ -814,7 +823,8 @@ body {
 
 .tab-icon {
   position: relative;
-  font-size: 1.16rem;
+  display: grid;
+  place-items: center;
   line-height: 1;
   transition: transform 0.16s ease;
 }
@@ -1009,36 +1019,52 @@ body {
   border-color: var(--accent);
 }
 
+/* two-up on phones — four across made every number unreadable */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 7px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+  margin-bottom: 6px;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding: 9px 4px;
-  border-radius: 11px;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 13px 14px;
+  border-radius: 13px;
   border: 1px solid var(--border);
   background: rgba(28, 20, 48, 0.7);
 }
 
 .stat-value {
-  font-size: 0.94rem;
+  font-size: 1.32rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
-  font-size: 0.54rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.09em;
   color: var(--text-dim);
-  text-align: center;
+}
+
+.stat-you .stat-value {
+  color: var(--accent);
+}
+
+.board-caption {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--text-dim);
+}
+
+.board-refresh svg.is-spinning {
+  animation: spin 0.9s linear infinite;
 }
 
 .board-list {
@@ -1047,79 +1073,109 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
+  counter-reset: rank;
 }
 
+/*
+ * The score bar is the row's own background rather than a separate strip.
+ * One element does both jobs, so the list stays scannable instead of turning
+ * into a stack of thin gauges.
+ */
 .board-row {
+  position: relative;
   display: grid;
-  grid-template-columns: 26px 1fr auto;
+  grid-template-columns: 22px 26px 1fr auto;
   align-items: center;
-  gap: 9px;
-  padding: 8px 11px;
-  border-radius: 11px;
+  gap: 11px;
+  padding: 11px 14px;
+  border-radius: 12px;
   border: 1px solid var(--border);
-  background: rgba(28, 20, 48, 0.7);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 181, 69, 0.16) 0%,
+      rgba(255, 138, 61, 0.07) var(--pct, 0%),
+      transparent var(--pct, 0%)
+    ),
+    rgba(28, 20, 48, 0.72);
+  overflow: hidden;
 }
 
 .board-row.is-you {
   border-color: var(--accent);
-  background: rgba(74, 44, 0, 0.4);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 181, 69, 0.3) 0%,
+      rgba(255, 138, 61, 0.14) var(--pct, 0%),
+      transparent var(--pct, 0%)
+    ),
+    rgba(46, 28, 6, 0.7);
 }
 
 .board-rank {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
   color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
-.is-you .board-rank {
+.rank-1 .board-rank,
+.rank-2 .board-rank,
+.rank-3 .board-rank {
   color: var(--accent);
 }
 
-.board-bar-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+.rank-1 {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.board-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(
+    140deg,
+    hsl(var(--hue, 40) 70% 62%),
+    hsl(calc(var(--hue, 40) + 40) 65% 42%)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .board-who {
-  font-size: 0.72rem;
-  color: var(--text-dim);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .is-you .board-who {
   color: var(--accent);
-  font-weight: 700;
-}
-
-.board-track {
-  height: 5px;
-  background: #241a3c;
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.board-fill {
-  display: block;
-  height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-warm));
-  transition: width 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
+  font-weight: 800;
 }
 
 .board-score {
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--text);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .board-score:hover {
   color: var(--accent);
+}
+
+.board-yours {
+  margin: 4px 0 0;
+  font-size: 0.74rem;
+  color: var(--accent);
+  text-align: center;
 }
 
 .board-note {
@@ -1198,15 +1254,47 @@ body {
    broken — so the shell widens, navigation moves to the top where a mouse
    expects it, and the cookie gets a fixed comfortable size. */
 
+/* one column on phones — the aside is desktop-only */
+.split {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.split-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.split-aside {
+  display: none;
+}
+
 @media (min-width: 900px) {
-  body {
-    padding: 0;
+  .app {
+    max-width: 1180px;
+    padding: 0 40px 40px;
+    min-height: 100dvh;
   }
 
-  .app {
-    max-width: 940px;
-    padding: 0 32px 40px;
-    min-height: 100dvh;
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    align-items: start;
+    gap: 40px;
+  }
+
+  .split-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: 84px;
   }
 
   .header {
@@ -1241,8 +1329,13 @@ body {
     border-radius: 999px;
   }
 
-  .tab-icon {
-    font-size: 1rem;
+  .tab-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .tab-label {
@@ -1316,7 +1409,27 @@ body {
 
 @media (min-width: 1240px) {
   .app {
-    max-width: 1080px;
+    max-width: 1280px;
+  }
+
+  .split {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+}
+
+/* the aside is a summary, so keep its stats stacked and compact */
+@media (min-width: 900px) {
+  .split-aside .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .split-aside .stat {
+    padding: 10px 12px;
+  }
+
+  .split-aside .stat-value {
+    font-size: 1.05rem;
   }
 }
 
