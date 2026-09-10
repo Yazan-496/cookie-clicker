@@ -58,7 +58,7 @@ export function BakePage({
 
       <LevelBar progress={game.progress} />
 
-      <Cookie onTap={onTap} tier={tier} />
+      <Cookie onTap={onTap} tier={tier} tapValue={game.tapValue} />
 
       <span className="tier-name">
         {tier.name}

@@ -4,6 +4,8 @@ import { chipLayout, type CookieTier } from '../lib/cookieTiers'
 interface Props {
   onTap: () => void
   tier: CookieTier
+  /** Cookies this tap is actually worth — upgrades raise it above 1. */
+  tapValue: number
 }
 
 interface Particle {
@@ -26,7 +28,7 @@ const CRUMBS_PER_TAP = 3
 const PARTICLE_MS = 620
 const SQUASH_MS = 200
 
-export function Cookie({ onTap, tier }: Props) {
+export function Cookie({ onTap, tier, tapValue }: Props) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [ripples, setRipples] = useState<Ripple[]>([])
   const [squashing, setSquashing] = useState(false)
@@ -199,7 +201,7 @@ export function Cookie({ onTap, tier }: Props) {
           }
           aria-hidden="true"
         >
-          {particle.dx === 0 ? '+1' : ''}
+          {particle.dx === 0 ? `+${tapValue.toLocaleString()}` : ''}
         </span>
       ))}
     </button>
