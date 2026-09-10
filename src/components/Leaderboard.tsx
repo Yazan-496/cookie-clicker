@@ -1,5 +1,6 @@
 import { explorerTxUrl, shortAddress, type LeaderboardEntry } from '../lib/chain'
 import { formatScore } from '../lib/format'
+import { SkeletonRows, SkeletonStats } from './Skeleton'
 
 interface Props {
   entries: LeaderboardEntry[]
@@ -37,30 +38,36 @@ export function Leaderboard({
     ? entries.findIndex((entry) => entry.player === currentPlayer)
     : -1
 
+  const firstLoad = loading && entries.length === 0
+
   return (
     <div className="board">
-      <div className="stats">
-        <div className="stat">
-          <span className="stat-value">{formatScore(players)}</span>
-          <span className="stat-label">bakers</span>
+      {firstLoad ? (
+        <SkeletonStats />
+      ) : (
+        <div className="stats">
+          <div className="stat">
+            <span className="stat-value">{formatScore(players)}</span>
+            <span className="stat-label">bakers</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{formatScore(totalBaked)}</span>
+            <span className="stat-label">cookies on-chain</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{formatScore(bakes)}</span>
+            <span className="stat-label">bakes</span>
+          </div>
+          <div className="stat stat-you">
+            <span className="stat-value">{rank >= 0 ? `#${rank + 1}` : '—'}</span>
+            <span className="stat-label">your rank</span>
+          </div>
         </div>
-        <div className="stat">
-          <span className="stat-value">{formatScore(totalBaked)}</span>
-          <span className="stat-label">cookies on-chain</span>
-        </div>
-        <div className="stat">
-          <span className="stat-value">{formatScore(bakes)}</span>
-          <span className="stat-label">bakes</span>
-        </div>
-        <div className="stat stat-you">
-          <span className="stat-value">{rank >= 0 ? `#${rank + 1}` : '—'}</span>
-          <span className="stat-label">your rank</span>
-        </div>
-      </div>
+      )}
 
       <div className="board-head">
         <span className="board-caption">
-          {loading ? 'Reading Cookie Chain…' : `Top ${top.length || 0}`}
+          {firstLoad ? 'Leaderboard' : `Top ${top.length || 0}`}
         </span>
         <button
           className="board-refresh"
@@ -86,6 +93,8 @@ export function Leaderboard({
       </div>
 
       {error && <p className="hint hint-error">{error}</p>}
+
+      {firstLoad && <SkeletonRows count={5} />}
 
       {!error && top.length === 0 && !loading && (
         <div className="empty">

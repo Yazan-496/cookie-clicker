@@ -40,15 +40,14 @@ const SPECKLES = [
   { cx: 22, cy: 66, r: 1.1 },
 ]
 
-const CRUMBS_PER_TAP = 4
-const PARTICLE_MS = 750
-const SQUASH_MS = 280
+const CRUMBS_PER_TAP = 3
+const PARTICLE_MS = 620
+const SQUASH_MS = 200
 
 export function Cookie({ onTap }: Props) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [ripples, setRipples] = useState<Ripple[]>([])
   const [squashing, setSquashing] = useState(false)
-  const [tilt, setTilt] = useState(0)
   const nextId = useRef(0)
   const squashTimer = useRef<number | null>(null)
 
@@ -60,19 +59,19 @@ export function Cookie({ onTap }: Props) {
 
       // One "+1" that floats straight up, plus crumbs scattering outward.
       const batch: Particle[] = [
-        { id: nextId.current++, x, y, dx: 0, dy: -78, rotate: 0, scale: 1 },
+        { id: nextId.current++, x, y, dx: 0, dy: -54, rotate: 0, scale: 1 },
       ]
       for (let i = 0; i < CRUMBS_PER_TAP; i += 1) {
         const angle = (Math.PI * 2 * i) / CRUMBS_PER_TAP + Math.random() * 0.9
-        const distance = 34 + Math.random() * 30
+        const distance = 22 + Math.random() * 18
         batch.push({
           id: nextId.current++,
           x,
           y,
           dx: Math.cos(angle) * distance,
-          dy: Math.sin(angle) * distance - 18,
-          rotate: (Math.random() - 0.5) * 320,
-          scale: 0.5 + Math.random() * 0.5,
+          dy: Math.sin(angle) * distance - 12,
+          rotate: (Math.random() - 0.5) * 140,
+          scale: 0.45 + Math.random() * 0.35,
         })
       }
 
@@ -86,9 +85,6 @@ export function Cookie({ onTap }: Props) {
         setParticles((prev) => prev.filter((p) => !ids.has(p.id)))
         setRipples((prev) => prev.filter((r) => r.id !== ripple.id))
       }, PARTICLE_MS)
-
-      // A small random tilt each tap stops repeated presses looking identical.
-      setTilt((Math.random() - 0.5) * 5)
 
       // Restart the squash animation cleanly on every tap.
       setSquashing(false)
@@ -111,7 +107,6 @@ export function Cookie({ onTap }: Props) {
 
       <span
         className={`cookie-body ${squashing ? 'is-squashing' : ''}`}
-        style={{ '--tilt': `${tilt}deg` } as React.CSSProperties}
         aria-hidden="true"
       >
         <svg viewBox="0 0 100 100" className="cookie-art">

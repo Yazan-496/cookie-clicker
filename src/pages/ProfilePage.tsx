@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BakeHistory } from '../components/BakeHistory'
 import { ConnectButton } from '../components/ConnectButton'
+import { Skeleton } from '../components/Skeleton'
 import type { useBake } from '../hooks/useBake'
 import type { useGame } from '../hooks/useGame'
 import type { useGasBalance } from '../hooks/useGasBalance'
@@ -82,15 +83,17 @@ export function ProfilePage({
             <span className="wallet-copied">{copied ? 'Copied' : ''}</span>
 
             <div className="wallet-row">
-              <span>
-                {gas.loading
-                  ? 'checking…'
-                  : gas.balance === null
+              {gas.loading ? (
+                <Skeleton width="112px" height="1.05rem" />
+              ) : (
+                <span>
+                  {gas.balance === null
                     ? `${GAS_TOKEN} balance unavailable`
                     : `${gas.balance.toLocaleString(undefined, {
                         maximumFractionDigits: 6,
                       })} ${GAS_TOKEN}`}
-              </span>
+                </span>
+              )}
               <button className="wallet-refresh" onClick={() => void gas.refresh()}>
                 ↻
               </button>
@@ -116,9 +119,12 @@ export function ProfilePage({
             </div>
           </div>
 
-          <BakeHistory records={bakeState.history} />
+          <BakeHistory
+            records={bakeState.history}
+            loading={bakeState.loadingHistory}
+          />
 
-          {bakeState.history.length === 0 && (
+          {bakeState.history.length === 0 && !bakeState.loadingHistory && (
             <p className="page-note">
               No bakes yet. Your on-chain history is read back from Cookie Chain,
               so it follows this wallet on any device.
