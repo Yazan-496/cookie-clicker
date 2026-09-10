@@ -20,55 +20,25 @@ export function useNightly() {
   const [error, setError] = useState<string | null>(null)
   const [installed, setInstalled] = useState(false)
 
-  // The extension injects asynchronously, so poll briefly on mount.
+  // The extension injects asynchronously, so poll briefly on mount. Giving up
+  // is a normal outcome — the game is fully playable without a wallet.
   useEffect(() => {
     let attempts = 0
     const timer = setInterval(() => {
       attempts += 1
       if (isNightlyInstalled()) {
-        console.log(`${LOG} Nightly detected on window.nightly.solana`)
         setInstalled(true)
         clearInterval(timer)
       } else if (attempts > 30) {
-        console.warn(`${LOG} Nightly not found after 3s`)
         clearInterval(timer)
       }
     }, 100)
     return () => clearInterval(timer)
   }, [])
 
-  // Reconnect silently if this site was already approved, so a refresh does
-  // not force the user to click Connect again. Raced against a timeout —
-  // an unanswered eager request must never block the manual Connect button.
-  useEffect(() => {
-    if (!installed || publicKey) return
-
-    const provider = getNightlyProvider()
-    if (typeof provider?.connect !== 'function') return
-
-    let cancelled = false
-
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('eager connect timed out')), 2500),
-    )
-
-    Promise.race([provider.connect({ onlyIfTrusted: true }), timeout])
-      .then((result) => {
-        if (cancelled) return
-        const key = extractPublicKey(result, provider)
-        if (key) {
-          console.log(`${LOG} auto-reconnected as ${key.toString()}`)
-          setPublicKey(key)
-        }
-      })
-      .catch(() => {
-        /* not trusted yet, or Nightly ignored it — user clicks Connect */
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [installed, publicKey])
+  // No eager reconnect: connecting a wallet is the user's decision every
+  // session, and a page that silently attaches itself on load is worse than
+  // one extra click.
 
   const connect = useCallback(async () => {
     setError(null)
