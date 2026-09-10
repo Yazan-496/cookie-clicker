@@ -11,6 +11,8 @@ interface Props {
   onTap: (ring: number) => void
   tier: CookieTier
   tapValue: number
+  /** Set briefly when a new tier is reached, for the unlock burst. */
+  celebrating?: boolean
 }
 
 interface Particle {
@@ -46,10 +48,11 @@ function ringAt(dx: number, dy: number, radius: number): number {
   return RING_COUNT - 1
 }
 
-export function Cookie({ onTap, tier, tapValue }: Props) {
+export function Cookie({ onTap, tier, tapValue, celebrating }: Props) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [ripples, setRipples] = useState<Ripple[]>([])
   const [hitRing, setHitRing] = useState<number | null>(null)
+  const [push, setPush] = useState({ x: 0, y: 0, tilt: 0 })
   const nextId = useRef(0)
   const hitTimer = useRef<number | null>(null)
 
@@ -62,7 +65,21 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
       const y = event.clientY - rect.top
 
       const radius = rect.width / 2
-      const ring = ringAt(x - radius, y - radius, radius)
+      const offsetX = x - radius
+      const offsetY = y - radius
+      const ring = ringAt(offsetX, offsetY, radius)
+
+      // Where you press decides how it moves: the cookie dips away from the
+      // finger and rolls toward that side, so the left edge and the right edge
+      // feel like different places to hit rather than one uniform button.
+      const nx = Math.max(-1, Math.min(1, offsetX / radius))
+      const ny = Math.max(-1, Math.min(1, offsetY / radius))
+      const strength = 0.45 + ring * 0.16
+      setPush({
+        x: nx * 7 * strength,
+        y: ny * 7 * strength,
+        tilt: nx * 7 * strength,
+      })
 
       // Outer rings fling crumbs further; the centre press is more contained.
       const spread = 16 + ring * 9
