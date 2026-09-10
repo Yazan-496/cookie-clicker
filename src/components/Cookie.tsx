@@ -132,7 +132,6 @@ export function Cookie({ onTap, tier, tapValue, celebrating }: Props) {
       aria-label={`Tap to bake — five rings play do, re, mi, fa, sol from the centre out`}
       style={{ '--tier-glow': tier.glow } as React.CSSProperties}
     >
-      <span className="cookie-glow" aria-hidden="true" />
       {celebrating && <span className="cookie-burst" aria-hidden="true" />}
 
       <span

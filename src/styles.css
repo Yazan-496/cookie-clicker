@@ -532,19 +532,6 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.cookie-glow {
-  position: absolute;
-  inset: -18%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    var(--tier-glow, rgba(255, 168, 61, 0.28)) 0%,
-    transparent 68%
-  );
-  pointer-events: none;
-  animation: glow-pulse 3.6s ease-in-out infinite;
-}
-
 .cookie-body {
   display: block;
   width: 100%;
@@ -660,14 +647,6 @@ body {
   display: block;
 }
 
-.cookie:active .cookie-glow {
-  background: radial-gradient(
-    circle,
-    rgba(255, 190, 90, 0.45) 0%,
-    rgba(255, 168, 61, 0.1) 48%,
-    transparent 72%
-  );
-}
 
 /*
  * Five rings, five notes, five reactions.
@@ -948,17 +927,6 @@ body {
   }
 }
 
-@keyframes glow-pulse {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-}
 
 /* ---------- tap feedback ---------- */
 
