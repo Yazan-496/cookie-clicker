@@ -1,7 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
+import { chipLayout, type CookieTier } from '../lib/cookieTiers'
 
 interface Props {
   onTap: () => void
+  tier: CookieTier
 }
 
 interface Particle {
@@ -20,36 +22,18 @@ interface Ripple {
   y: number
 }
 
-const CHIPS = [
-  { cx: 33, cy: 31, r: 6.5 },
-  { cx: 64, cy: 28, r: 5 },
-  { cx: 71, cy: 57, r: 6 },
-  { cx: 42, cy: 63, r: 7 },
-  { cx: 26, cy: 54, r: 4.5 },
-  { cx: 55, cy: 44, r: 4 },
-  { cx: 52, cy: 78, r: 4.5 },
-  { cx: 78, cy: 40, r: 3.5 },
-]
-
-const SPECKLES = [
-  { cx: 46, cy: 22, r: 1.4 },
-  { cx: 60, cy: 68, r: 1.6 },
-  { cx: 30, cy: 44, r: 1.2 },
-  { cx: 68, cy: 47, r: 1.3 },
-  { cx: 38, cy: 74, r: 1.5 },
-  { cx: 22, cy: 66, r: 1.1 },
-]
-
 const CRUMBS_PER_TAP = 3
 const PARTICLE_MS = 620
 const SQUASH_MS = 200
 
-export function Cookie({ onTap }: Props) {
+export function Cookie({ onTap, tier }: Props) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [ripples, setRipples] = useState<Ripple[]>([])
   const [squashing, setSquashing] = useState(false)
   const nextId = useRef(0)
   const squashTimer = useRef<number | null>(null)
+
+  const chips = chipLayout(tier.chipCount)
 
   const handleTap = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -57,7 +41,6 @@ export function Cookie({ onTap }: Props) {
       const x = event.clientX - rect.left
       const y = event.clientY - rect.top
 
-      // One "+1" that floats straight up, plus crumbs scattering outward.
       const batch: Particle[] = [
         { id: nextId.current++, x, y, dx: 0, dy: -54, rotate: 0, scale: 1 },
       ]
@@ -86,7 +69,6 @@ export function Cookie({ onTap }: Props) {
         setRipples((prev) => prev.filter((r) => r.id !== ripple.id))
       }, PARTICLE_MS)
 
-      // Restart the squash animation cleanly on every tap.
       setSquashing(false)
       if (squashTimer.current) window.clearTimeout(squashTimer.current)
       requestAnimationFrame(() => setSquashing(true))
@@ -97,60 +79,79 @@ export function Cookie({ onTap }: Props) {
     [onTap],
   )
 
+  const gid = `t-${tier.id}`
+
   return (
     <button
       className="cookie"
       onPointerDown={handleTap}
-      aria-label="Tap to bake a cookie"
+      aria-label={`Tap to bake a cookie — ${tier.name}`}
+      style={{ '--tier-glow': tier.glow } as React.CSSProperties}
     >
       <span className="cookie-glow" aria-hidden="true" />
 
       <span
-        className={`cookie-body ${squashing ? 'is-squashing' : ''}`}
+        className={`cookie-body idle-${tier.idle} ${squashing ? 'is-squashing' : ''}`}
         aria-hidden="true"
       >
         <svg viewBox="0 0 100 100" className="cookie-art">
           <defs>
-            <radialGradient id="dough" cx="34%" cy="28%" r="78%">
-              <stop offset="0%" stopColor="#f0be82" />
-              <stop offset="55%" stopColor="#d59a55" />
-              <stop offset="100%" stopColor="#a96c31" />
+            <radialGradient id={`${gid}-dough`} cx="34%" cy="28%" r="78%">
+              <stop offset="0%" stopColor={tier.dough[0]} />
+              <stop offset="55%" stopColor={tier.dough[1]} />
+              <stop offset="100%" stopColor={tier.dough[2]} />
             </radialGradient>
-            <radialGradient id="chipFill" cx="34%" cy="28%" r="80%">
-              <stop offset="0%" stopColor="#7a4e28" />
-              <stop offset="100%" stopColor="#331d0d" />
+            <radialGradient id={`${gid}-chip`} cx="34%" cy="28%" r="80%">
+              <stop offset="0%" stopColor={tier.chip[0]} />
+              <stop offset="100%" stopColor={tier.chip[1]} />
             </radialGradient>
-            <linearGradient id="sheen" x1="0" y1="0" x2="0.5" y2="1">
-              <stop offset="0%" stopColor="#fff" stopOpacity="0.34" />
+            <linearGradient id={`${gid}-sheen`} x1="0" y1="0" x2="0.5" y2="1">
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.32" />
               <stop offset="70%" stopColor="#fff" stopOpacity="0" />
             </linearGradient>
           </defs>
 
-          <circle cx="50" cy="50" r="47" fill="#7d4d20" opacity="0.55" />
-          <circle cx="50" cy="50" r="46" fill="url(#dough)" />
-          <ellipse cx="42" cy="34" rx="30" ry="24" fill="url(#sheen)" />
+          <circle cx="50" cy="50" r="47" fill={tier.rim} />
+          <circle cx="50" cy="50" r="46" fill={`url(#${gid}-dough)`} />
+          <ellipse cx="42" cy="34" rx="30" ry="24" fill={`url(#${gid}-sheen)`} />
 
-          {SPECKLES.map((s) => (
-            <circle
-              key={`s-${s.cx}-${s.cy}`}
-              cx={s.cx}
-              cy={s.cy}
-              r={s.r}
-              fill="#a4682f"
-              opacity="0.5"
+          {tier.flourish === 'frosting' && (
+            <path
+              d="M14 42c9-9 20 6 30-2s18 6 27-3 12 4 15 1"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="7"
+              strokeLinecap="round"
+              opacity="0.85"
             />
-          ))}
+          )}
 
-          {CHIPS.map((chip) => (
-            <g key={`c-${chip.cx}-${chip.cy}`}>
+          {tier.flourish === 'glaze' && (
+            <path
+              d="M12 54c10 8 20-8 30 0s18-10 28-2 14-4 18-1"
+              fill="none"
+              stroke="#ffe9a8"
+              strokeWidth="5"
+              strokeLinecap="round"
+              opacity="0.6"
+            />
+          )}
+
+          {chips.map((chip, index) => (
+            <g key={index}>
               <circle
                 cx={chip.cx}
                 cy={chip.cy + 0.8}
                 r={chip.r}
-                fill="#8a5a2b"
+                fill={tier.rim}
                 opacity="0.45"
               />
-              <circle cx={chip.cx} cy={chip.cy} r={chip.r} fill="url(#chipFill)" />
+              <circle
+                cx={chip.cx}
+                cy={chip.cy}
+                r={chip.r}
+                fill={`url(#${gid}-chip)`}
+              />
               <circle
                 cx={chip.cx - chip.r * 0.3}
                 cy={chip.cy - chip.r * 0.35}
@@ -160,6 +161,14 @@ export function Cookie({ onTap }: Props) {
               />
             </g>
           ))}
+
+          {tier.flourish === 'sparkle' && (
+            <g className="cookie-sparkles" fill="#fffdf0">
+              <path d="M28 26 29.2 22 30.4 26 34 27.2 30.4 28.4 29.2 32 28 28.4 24.4 27.2Z" />
+              <path d="M70 62 71 59 72 62 75 63 72 64 71 67 70 64 67 63Z" />
+              <path d="M58 22 58.9 19.5 59.8 22 62.3 22.9 59.8 23.8 58.9 26.3 58 23.8 55.5 22.9Z" />
+            </g>
+          )}
         </svg>
       </span>
 
@@ -172,10 +181,10 @@ export function Cookie({ onTap }: Props) {
         />
       ))}
 
-      {particles.map((particle, index) => (
+      {particles.map((particle) => (
         <span
           key={particle.id}
-          className={index === 0 || particle.dx === 0 ? 'pop' : 'crumb'}
+          className={particle.dx === 0 ? 'pop' : 'crumb'}
           style={
             {
               left: particle.x,
@@ -184,6 +193,8 @@ export function Cookie({ onTap }: Props) {
               '--dy': `${particle.dy}px`,
               '--rot': `${particle.rotate}deg`,
               '--scale': particle.scale,
+              '--crumb-a': tier.chip[0],
+              '--crumb-b': tier.chip[1],
             } as React.CSSProperties
           }
           aria-hidden="true"

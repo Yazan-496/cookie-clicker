@@ -18,6 +18,15 @@ const MAX_TAPS_PER_SECOND = 25
 const CLAMP_SLACK = 1.5
 const TICK_MS = 100
 
+/**
+ * Passive production stops this long after the last tap.
+ *
+ * Unlimited idle income turns the on-chain leaderboard into a measure of who
+ * left a tab open longest, which defeats the point of putting scores on-chain
+ * at all. Upgrades still pay out — they just require you to be playing.
+ */
+const IDLE_TIMEOUT_MS = 30_000
+
 interface GameState {
   /** Spendable cookies. */
   score: number
@@ -82,7 +91,9 @@ function isValid(value: unknown): value is GameState {
 
 export function useGame() {
   const [state, setState] = useState<GameState>(freshState)
+  const [idle, setIdle] = useState(false)
   const loaded = useRef(false)
+  const lastTap = useRef(Date.now())
 
   useEffect(() => {
     let cancelled = false
@@ -118,10 +129,16 @@ export function useGame() {
   const tapValue = useMemo(() => tapValueOf(state.owned), [state.owned])
 
   // Passive production. Ticks ten times a second so the counter moves smoothly
-  // rather than jumping once per second.
+  // rather than jumping once per second — and pauses once you stop playing.
   useEffect(() => {
     if (cps <= 0) return
     const id = window.setInterval(() => {
+      const sinceTap = Date.now() - lastTap.current
+      if (sinceTap > IDLE_TIMEOUT_MS) {
+        setIdle(true)
+        return
+      }
+      setIdle(false)
       const gain = (cps * TICK_MS) / 1000
       setState((s) => ({
         ...s,
@@ -133,6 +150,8 @@ export function useGame() {
   }, [cps])
 
   const tap = useCallback(() => {
+    lastTap.current = Date.now()
+    setIdle(false)
     setState((s) => {
       const gain = tapValueOf(s.owned)
       return { ...s, score: s.score + gain, totalBaked: s.totalBaked + gain }
@@ -168,6 +187,9 @@ export function useGame() {
     prices,
     cps,
     tapValue,
+    /** True when passive production has paused for inactivity. */
+    idle,
+    idleTimeoutMs: IDLE_TIMEOUT_MS,
     progress: levelProgress(state.totalBaked),
     tap,
     buy,

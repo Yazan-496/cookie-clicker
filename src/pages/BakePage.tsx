@@ -5,6 +5,7 @@ import type { useBake } from '../hooks/useBake'
 import type { useGame } from '../hooks/useGame'
 import { formatScore } from '../lib/format'
 import { GAS_TOKEN } from '../lib/chain'
+import { nextTier, type CookieTier } from '../lib/cookieTiers'
 
 interface Props {
   game: ReturnType<typeof useGame>
@@ -14,6 +15,8 @@ interface Props {
   canBake: boolean
   showGasHelp: boolean
   onBake: () => void
+  onTap: () => void
+  tier: CookieTier
   onDismissGasHelp: () => void
   walletError: string | null
 }
@@ -26,9 +29,13 @@ export function BakePage({
   canBake,
   showGasHelp,
   onBake,
+  onTap,
+  tier,
   onDismissGasHelp,
   walletError,
 }: Props) {
+  const upcoming = nextTier(game.progress.level)
+
   return (
     <>
       <div className="score" aria-live="polite">
@@ -40,8 +47,10 @@ export function BakePage({
         <div className="score-rates">
           <span className="rate">+{formatScore(game.tapValue)} / tap</span>
           {game.cps > 0 && (
-            <span className="rate rate-passive">
-              +{formatScore(game.cps)} / sec
+            <span className={`rate rate-passive ${game.idle ? 'is-idle' : ''}`}>
+              {game.idle
+                ? 'paused — tap to resume'
+                : `+${formatScore(game.cps)} / sec`}
             </span>
           )}
         </div>
@@ -49,7 +58,14 @@ export function BakePage({
 
       <LevelBar progress={game.progress} />
 
-      <Cookie onTap={game.tap} />
+      <Cookie onTap={onTap} tier={tier} />
+
+      <span className="tier-name">
+        {tier.name}
+        {upcoming && (
+          <span className="tier-next"> · {upcoming.name} at level {upcoming.minLevel}</span>
+        )}
+      </span>
 
       <span className="score-verified">
         {onChainScore > 0

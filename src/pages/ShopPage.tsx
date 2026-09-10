@@ -4,9 +4,10 @@ import { formatScore } from '../lib/format'
 
 interface Props {
   game: ReturnType<typeof useGame>
+  onBuy: (id: string) => void
 }
 
-export function ShopPage({ game }: Props) {
+export function ShopPage({ game, onBuy }: Props) {
   return (
     <section className="page">
       <div className="page-head">
@@ -29,7 +30,7 @@ export function ShopPage({ game }: Props) {
             <li key={def.id}>
               <button
                 className={`upgrade-row ${affordable ? 'is-affordable' : ''}`}
-                onClick={() => game.buy(def.id)}
+                onClick={() => onBuy(def.id)}
                 disabled={!affordable}
               >
                 <span className="upgrade-row-icon" aria-hidden="true">

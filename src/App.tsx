@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ConnectButton } from './components/ConnectButton'
+import { Controls } from './components/Controls'
 import { Leaderboard } from './components/Leaderboard'
 import { TabBar, type Tab } from './components/TabBar'
 import { BakePage } from './pages/BakePage'
@@ -11,7 +12,10 @@ import { useGame } from './hooks/useGame'
 import { useGasBalance } from './hooks/useGasBalance'
 import { useLeaderboard } from './hooks/useLeaderboard'
 import { useNightly } from './hooks/useNightly'
+import { useSound } from './hooks/useSound'
+import { useTheme } from './hooks/useTheme'
 import { UPGRADES } from './lib/game'
+import { tierFor } from './lib/cookieTiers'
 import { IS_COOKIE_CHAIN, NETWORK_NAME } from './lib/chain'
 
 export default function App() {
@@ -24,8 +28,26 @@ export default function App() {
   const gas = useGasBalance(publicKey)
   const board = useLeaderboard()
 
+  const sound = useSound()
+  const theme = useTheme()
+
   const [tab, setTab] = useState<Tab>('bake')
   const [showGasHelp, setShowGasHelp] = useState(false)
+
+  const tier = useMemo(() => tierFor(game.progress.level), [game.progress.level])
+
+  const handleTap = useCallback(() => {
+    game.tap()
+    sound.play('tap')
+  }, [game, sound])
+
+  const handleBuy = useCallback(
+    (id: string) => {
+      game.buy(id)
+      sound.play('buy')
+    },
+    [game, sound],
+  )
 
   const address = publicKey?.toBase58() ?? null
   const outOfGas = gas.balance === 0
@@ -62,6 +84,12 @@ export default function App() {
     void board.refresh()
   }, [bakeState, game.totalBaked, gas, board, outOfGas])
 
+  // Sound follows the transaction outcome rather than the click.
+  useEffect(() => {
+    if (bakeState.status === 'confirmed') sound.play('success')
+    if (bakeState.status === 'error') sound.play('error')
+  }, [bakeState.status, sound])
+
   return (
     <div className="app">
       {!IS_COOKIE_CHAIN && (
@@ -75,13 +103,23 @@ export default function App() {
           <span className="level-badge">LV {game.progress.level}</span>
           <span className="brand-name">Cookie Clicker</span>
         </div>
-        <ConnectButton
-          address={address}
-          connecting={connecting}
-          installed={installed}
-          onConnect={connect}
-          onDisconnect={disconnect}
-        />
+        <div className="header-right">
+          <Controls
+            theme={theme.theme}
+            onCycleTheme={theme.cycle}
+            muted={sound.muted}
+            volume={sound.volume}
+            onToggleMute={sound.toggleMute}
+            onVolume={sound.setVolume}
+          />
+          <ConnectButton
+            address={address}
+            connecting={connecting}
+            installed={installed}
+            onConnect={connect}
+            onDisconnect={disconnect}
+          />
+        </div>
       </header>
 
       <main className="main">
@@ -96,6 +134,8 @@ export default function App() {
                 canBake={canBake}
                 showGasHelp={showGasHelp}
                 onBake={handleBake}
+                onTap={handleTap}
+                tier={tier}
                 onDismissGasHelp={() => setShowGasHelp(false)}
                 walletError={walletError}
               />
@@ -118,7 +158,7 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'shop' && <ShopPage game={game} />}
+        {tab === 'shop' && <ShopPage game={game} onBuy={handleBuy} />}
 
         {tab === 'board' && <BoardPage board={board} address={address} />}
 
