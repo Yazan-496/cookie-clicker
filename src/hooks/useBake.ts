@@ -1,7 +1,15 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { PublicKey } from '@solana/web3.js'
-import { buildBakeTransaction, connection, describeError } from '../lib/chain'
+import {
+  buildBakeTransaction,
+  connection,
+  describeError,
+  fetchBakeHistory,
+} from '../lib/chain'
+import type { BakeRecord } from '../lib/chain'
 import { getNightlyProvider } from '../lib/nightly'
+
+export type { BakeRecord }
 
 export type BakeStatus =
   | 'idle'
@@ -10,12 +18,6 @@ export type BakeStatus =
   | 'confirming'
   | 'confirmed'
   | 'error'
-
-export interface BakeRecord {
-  signature: string
-  score: number
-  at: number
-}
 
 const STATUS_LABEL: Record<BakeStatus, string> = {
   idle: '',
@@ -31,6 +33,34 @@ export function useBake(publicKey: PublicKey | null) {
   const [error, setError] = useState<string | null>(null)
   const [signature, setSignature] = useState<string | null>(null)
   const [history, setHistory] = useState<BakeRecord[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  // Load past bakes back off Cookie Chain whenever a wallet connects.
+  // This is why history survives a refresh — it lives on-chain.
+  useEffect(() => {
+    if (!publicKey) {
+      setHistory([])
+      return
+    }
+
+    let cancelled = false
+    setLoadingHistory(true)
+
+    fetchBakeHistory(publicKey)
+      .then((records) => {
+        if (!cancelled) setHistory(records)
+      })
+      .catch((err) => {
+        console.warn('[cookie-clicker] could not load on-chain history:', err)
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingHistory(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [publicKey])
 
   const reset = useCallback(() => {
     setStatus('idle')
@@ -75,11 +105,16 @@ export function useBake(publicKey: PublicKey | null) {
         )
 
         if (result.value.err) {
-          throw new Error(`Transaction failed on-chain: ${JSON.stringify(result.value.err)}`)
+          throw new Error(
+            `Transaction failed on-chain: ${JSON.stringify(result.value.err)}`,
+          )
         }
 
         setStatus('confirmed')
-        setHistory((prev) => [{ signature: sig, score, at: Date.now() }, ...prev])
+        setHistory((prev) => [
+          { signature: sig, score, at: Date.now() },
+          ...prev.filter((r) => r.signature !== sig),
+        ])
       } catch (err) {
         setStatus('error')
         setError(describeError(err))
@@ -96,6 +131,7 @@ export function useBake(publicKey: PublicKey | null) {
     error,
     signature,
     history,
+    loadingHistory,
     busy: status === 'signing' || status === 'sending' || status === 'confirming',
   }
 }

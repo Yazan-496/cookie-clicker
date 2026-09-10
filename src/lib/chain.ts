@@ -6,11 +6,28 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js'
 
-/** Cookie Chain community RPC — from https://docs.cookiechain.wtf */
-export const COOKIE_CHAIN_RPC = 'https://rpc.cookiescan.io'
+/**
+ * Cookie Chain community RPC — from https://docs.cookiechain.wtf
+ *
+ * Overridable so the transaction path can be exercised against Solana devnet,
+ * where SOL is free. Cookie Chain is SVM-compatible, so the same code, the same
+ * Memo program and the same RPC methods apply to both. The default is always
+ * Cookie Chain — a plain `npm run build` can never produce a devnet build.
+ */
+export const COOKIE_CHAIN_RPC =
+  import.meta.env.VITE_RPC_URL ?? 'https://rpc.cookiescan.io'
 
 /** Block explorer used for transaction links. */
-export const EXPLORER_URL = 'https://cookiescan.io'
+export const EXPLORER_URL =
+  import.meta.env.VITE_EXPLORER_URL ?? 'https://cookiescan.io'
+
+/** Appended to explorer links (Solana explorer needs ?cluster=devnet). */
+export const EXPLORER_SUFFIX = import.meta.env.VITE_EXPLORER_SUFFIX ?? ''
+
+export const NETWORK_NAME = import.meta.env.VITE_NETWORK_NAME ?? 'Cookie Chain'
+
+/** False when pointed anywhere other than Cookie Chain. */
+export const IS_COOKIE_CHAIN = !import.meta.env.VITE_RPC_URL
 
 /**
  * SPL Memo program. Cookie Chain is SVM-compatible, so standard SPL programs
@@ -26,7 +43,7 @@ export const USE_MEMO = true
 export const connection = new Connection(COOKIE_CHAIN_RPC, 'confirmed')
 
 export function explorerTxUrl(signature: string): string {
-  return `${EXPLORER_URL}/tx/${signature}`
+  return `${EXPLORER_URL}/tx/${signature}${EXPLORER_SUFFIX}`
 }
 
 export function shortAddress(address: string, size = 4): string {
@@ -67,6 +84,46 @@ export function buildBakeTransaction(
   }
 
   return tx
+}
+
+export interface BakeRecord {
+  signature: string
+  score: number
+  at: number
+}
+
+/** Pulls the score back out of a memo written by buildBakeTransaction. */
+export function parseScoreFromMemo(memo: string | null | undefined): number | null {
+  if (!memo) return null
+  const match = memo.match(/cookie-clicker\|score:(\d+)/)
+  return match ? Number(match[1]) : null
+}
+
+/**
+ * Reads this player's past bakes back off Cookie Chain.
+ *
+ * getSignaturesForAddress returns the memo alongside each signature, so the
+ * full history comes back in a single RPC call — no per-transaction fetches.
+ * This is what makes bakes survive a refresh: the history lives on-chain,
+ * not in browser state.
+ */
+export async function fetchBakeHistory(
+  player: PublicKey,
+  limit = 20,
+): Promise<BakeRecord[]> {
+  const signatures = await connection.getSignaturesForAddress(player, { limit })
+
+  return signatures.flatMap((info) => {
+    const score = parseScoreFromMemo(info.memo)
+    if (score === null || info.err) return []
+    return [
+      {
+        signature: info.signature,
+        score,
+        at: (info.blockTime ?? 0) * 1000,
+      },
+    ]
+  })
 }
 
 /** Human-readable messages for the failures players actually hit. */

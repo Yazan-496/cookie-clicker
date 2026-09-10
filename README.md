@@ -114,6 +114,40 @@ game stays instant and only spends gas when the player chooses to.
 
 ---
 
+## Trust model
+
+Anything stored in the browser can be edited by the person holding the browser.
+Opening DevTools and setting the saved score to a trillion takes five seconds,
+so the app is built on the assumption that it will happen.
+
+**The local tap counter is a buffer, never a source of truth.** Two things
+follow from that:
+
+1. **The chain is authoritative.** The score shown as *"verified on Cookie
+   Chain"* is derived from memos actually written on-chain and read back via
+   `getSignaturesForAddress`. Writing one costs gas and is publicly auditable
+   on Cookiescan. The local number carries no authority and is labelled as such.
+
+2. **The local buffer is bounded by physics.** Progress is stored as
+   `{ score, since }`. On load — and again whenever the tab regains focus — the
+   score is clamped to `elapsed_seconds × 25`, the fastest any human could tap.
+   A hand-edited trillion collapses back to a plausible number, and the clamp is
+   logged to the console.
+
+3. **Storage is tamper-evident.** Keys are SHA-256 hashed so nothing in
+   DevTools is human-readable, and values are encrypted with AES-GCM via
+   Web Crypto. Because AES-GCM is authenticated, editing a stored value makes
+   decryption fail and the value is discarded rather than trusted.
+
+   This is deliberately described as *obfuscation*, not security. The
+   derivation secret ships in the bundle, so a determined user can extract it
+   and forge a value. It raises the cost of casual tampering; it does not
+   eliminate it.
+
+This does not make the client tamper-proof; nothing client-side can be. It
+makes tampering *pointless*, because the only number that counts is the one on
+Cookie Chain.
+
 ## Project structure
 
 ```
@@ -122,11 +156,13 @@ src/
 ├── main.tsx                   entry point, Buffer polyfill
 ├── styles.css                 mobile-first styles
 ├── lib/
-│   ├── chain.ts               RPC, transaction building, error messages
+│   ├── chain.ts               RPC, transactions, on-chain history, errors
+│   ├── format.ts              compact score formatting
 │   └── nightly.ts             Nightly provider detection and types
 ├── hooks/
 │   ├── useNightly.ts          connect / disconnect / eager reconnect
-│   └── useBake.ts             transaction lifecycle
+│   ├── useScore.ts            tamper-clamped local tap buffer
+│   └── useBake.ts             transaction lifecycle + on-chain history
 └── components/
     ├── ConnectButton.tsx      connect state and address display
     ├── Cookie.tsx             tap target and crumb animation
