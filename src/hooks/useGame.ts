@@ -12,19 +12,12 @@ import {
 const STORAGE_NAME = 'progress'
 const LEGACY_KEYS = ['cookie-clicker:progress', 'cookie-clicker:score']
 
-/** No human taps faster than this — used to bound a tampered save. */
-const MAX_TAPS_PER_SECOND = 25
-/** Slack so honest saves are never clipped by clock drift or a slow tab. */
-const CLAMP_SLACK = 1.5
+const MAX_TAPS_PER_SECOND = 25 // nobody taps faster; bounds a tampered save
+const CLAMP_SLACK = 1.5 // tolerance for clock drift and throttled tabs
 const TICK_MS = 100
 
-/**
- * Passive production stops this long after the last tap.
- *
- * Unlimited idle income turns the on-chain leaderboard into a measure of who
- * left a tab open longest, which defeats the point of putting scores on-chain
- * at all. Upgrades still pay out — they just require you to be playing.
- */
+// Passive income stops after this long idle, so the leaderboard measures
+// playing rather than how long a tab was left open.
 const IDLE_TIMEOUT_MS = 30_000
 
 interface GameState {
@@ -52,10 +45,8 @@ function sanitiseOwned(raw: unknown): Owned {
   return owned
 }
 
-/**
- * Bounds a loaded save by what the elapsed time could physically have produced:
- * tapping flat out, plus whatever the owned upgrades generate passively.
- */
+// Bound a loaded save by what the elapsed time could actually have produced:
+// flat-out tapping plus whatever the owned upgrades generate.
 function clamp(state: GameState): GameState {
   const elapsedSeconds = Math.max(1, (Date.now() - state.since) / 1000)
   const perSecond =

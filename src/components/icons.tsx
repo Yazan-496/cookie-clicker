@@ -1,10 +1,6 @@
-/**
- * Line icons at a consistent 24×24 grid and stroke weight.
- *
- * Emoji were the obvious shortcut, but they render differently on every
- * platform, carry their own colours, and never optically align with each other
- * — which is exactly what makes a tab bar look unfinished.
- */
+// Emoji were the shortcut, but they render differently per platform, bring
+// their own colours, and never optically align. These share a 24x24 grid and
+// stroke weight.
 
 const base = {
   width: 22,

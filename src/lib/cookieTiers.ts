@@ -16,12 +16,9 @@ export interface CookieTier {
   glow: string
 }
 
-/**
- * Progression is shape and craft, not colour. Every tier stays in the
- * baked-brown range — a cookie that turns pink stops reading as a cookie. What
- * changes is the silhouette: a plain disc at the start, then softer edges,
- * hand-shaped irregularity, scalloped rims, and finally a craggy, cracked bake.
- */
+// Progression is shape, not colour — every tier stays baked-brown. A plain
+// disc at the start, then softer edges, hand-shaped irregularity, scalloped
+// rims, finally a craggy bake.
 export const COOKIE_TIERS: CookieTier[] = [
   {
     id: 'dough',
@@ -123,11 +120,8 @@ const SHAPE_SETTINGS: Record<CookieShape, { lobes: number; amplitude: number }> 
   craggy: { lobes: 9, amplitude: 3.4 },
 }
 
-/**
- * Builds the cookie outline by sweeping a circle and perturbing the radius
- * with a sine wave. More lobes means a finer scalloped rim; more amplitude
- * means a rougher, more hand-shaped edge.
- */
+// Sweeps a circle and perturbs the radius with a sine wave. More lobes gives
+// a finer scalloped rim, more amplitude a rougher edge.
 export function cookiePath(shape: CookieShape, radius = 46): string {
   const { lobes, amplitude } = SHAPE_SETTINGS[shape]
   if (lobes === 0) {

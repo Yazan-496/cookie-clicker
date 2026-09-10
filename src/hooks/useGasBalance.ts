@@ -2,10 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import type { PublicKey } from '@solana/web3.js'
 import { fetchGasBalance } from '../lib/chain'
 
-/**
- * Tracks the connected wallet's COOK balance so the UI can warn about missing
- * gas before a transaction is attempted rather than after it fails.
- */
+// So the UI can mention missing gas before a transaction is attempted,
+// rather than after it fails.
 export function useGasBalance(publicKey: PublicKey | null) {
   const [balance, setBalance] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)

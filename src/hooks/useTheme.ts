@@ -13,11 +13,8 @@ function load(): Theme {
   }
 }
 
-/**
- * Three states, not two. "system" is the default so the app matches whatever
- * the device is already doing; an explicit choice stamps data-theme on the
- * root and wins over the media query in both directions.
- */
+// Three states. "system" follows the device; an explicit choice stamps
+// data-theme on the root and overrides the media query.
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(load)
 

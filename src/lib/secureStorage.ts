@@ -1,15 +1,9 @@
-/**
- * Tamper-evident localStorage.
- *
- * Keys are hashed so nothing in DevTools is human-readable, and values are
- * encrypted with AES-GCM. Because AES-GCM is *authenticated*, any edit to a
- * stored value fails decryption and is rejected rather than silently trusted.
- *
- * This is obfuscation, not security. The derivation secret ships in the
- * bundle, so a determined user can extract it and forge a value. It defeats
- * casual tampering; it does not defeat a motivated attacker. The real defence
- * is that the authoritative score lives on Cookie Chain — see the README.
- */
+// Tamper-evident localStorage: hashed keys, AES-GCM values. Because GCM is
+// authenticated, an edited value fails to decrypt and gets discarded instead
+// of trusted.
+//
+// Obfuscation, not security — the secret ships in the bundle. The real defence
+// is that the authoritative score lives on-chain.
 
 const APP_SECRET = 'cookie-clicker/v1'
 const PBKDF2_ITERATIONS = 100_000

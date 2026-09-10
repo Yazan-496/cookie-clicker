@@ -1,11 +1,7 @@
-/**
- * Simulates a bake transaction against Cookie Chain.
- *
- * Simulation needs no gas and no signature, so this validates the instruction
- * set — including the app-marker transfer — before any COOK is ever spent.
- *
- *   node scripts/simulate-bake.mjs [playerAddress]
- */
+// Simulates a bake against Cookie Chain. No gas, no signature — validates the
+// instruction set before any COOK is spent.
+//
+//   node scripts/simulate-bake.mjs [playerAddress]
 import {
   Connection,
   PublicKey,

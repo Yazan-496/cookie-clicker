@@ -1,8 +1,5 @@
-/*
- * Light is the base palette on bare :root; dark is layered on top twice — once
- * for the system preference, once for an explicit choice — so the toggle wins
- * in both directions and "system" still follows the device.
- */
+/* Light is the base; dark overrides it for both system preference and an
+   explicit choice, so the toggle wins either way. */
 :root {
   --bg: #f7f3ee;
   --bg-deep: #efe8e0;
@@ -107,11 +104,8 @@ body {
   overflow: hidden;
 }
 
-/*
- * Rapid tapping on a touch screen otherwise triggers text selection and the
- * long-press callout — the cookie ends up highlighted blue mid-game. Selection
- * is re-enabled below on the few things worth copying.
- */
+/* Stops rapid tapping selecting the cookie. Re-enabled below where copying
+   actually matters. */
 body {
   user-select: none;
   -webkit-user-select: none;
@@ -127,11 +121,8 @@ body {
   -webkit-touch-callout: default;
 }
 
-/*
- * The gradient lives on body, not on the app shell. On a wide monitor a
- * centred container painted its own background leaves dead bars down both
- * sides — the page has to be the surface, not the column.
- */
+/* On body, not .app — a centred container painting its own background leaves
+   dead bars either side on a wide monitor. */
 body {
   background:
     radial-gradient(90% 46% at 50% 0%, var(--glow-1) 0%, transparent 62%),
@@ -490,11 +481,8 @@ body {
 
 /* ---------- main / score ---------- */
 
-/*
- * Content pages scroll inside this area; the game screen does not. Keeping
- * Bake fixed means the cookie never drifts under your thumb mid-tap, which is
- * the whole reason a clicker feels bad on a phone.
- */
+/* Content pages scroll here; the game screen doesn't, so the cookie can't
+   drift under your thumb mid-tap. */
 .main {
   flex: 1;
   min-height: 0;
@@ -586,11 +574,7 @@ body {
   filter: drop-shadow(0 16px 26px var(--cookie-shadow));
 }
 
-/*
- * Each cookie tier gets a different resting loop. One idle animation on screen
- * for an hour stops registering — swapping it as you level keeps the thing
- * feeling alive and makes progression visible without another number.
- */
+/* One idle loop stops registering after a while, so each tier gets its own. */
 .idle-float {
   animation: hover-float 4.2s ease-in-out infinite;
 }
@@ -712,13 +696,8 @@ body {
 }
 
 
-/*
- * Five rings, five notes, five reactions.
- *
- * Each ring gets its own movement so the cookie reads as an instrument rather
- * than one button — you can see which note you hit as well as hear it. All of
- * them stay small: this fires many times a minute.
- */
+/* One movement per ring, so you can see which note you hit as well as hear
+   it. Kept small — this fires constantly. */
 .cookie-body.hit {
   animation-duration: 320ms;
   animation-timing-function: cubic-bezier(0.22, 0.9, 0.32, 1);
@@ -741,12 +720,8 @@ body {
   animation-name: hit-swing;
 }
 
-/*
- * Every hit animation is built from --push-x / --push-y / --push-tilt, which
- * the component derives from where the finger landed. The keyframes supply the
- * character of each ring; the custom properties supply the direction, so
- * pressing the left rim and the right rim never look the same.
- */
+/* Direction comes from --push-* (set from the tap position), character from
+   the keyframes. Left rim and right rim never look the same. */
 
 /* do — a straight, contained press, barely displaced */
 @keyframes hit-press {
@@ -1013,11 +988,8 @@ body {
   }
 }
 
-/*
- * A solid pill rather than floating text. Bare glowing numerals disappear over
- * the cookie at some positions and read as a glitch; a filled chip stays
- * legible against any tier colour and looks deliberate.
- */
+/* A filled pill, not bare text — glowing numerals vanish against some tier
+   colours and read as a glitch. */
 .pop {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -1646,11 +1618,8 @@ body {
   counter-reset: rank;
 }
 
-/*
- * The score bar is the row's own background rather than a separate strip.
- * One element does both jobs, so the list stays scannable instead of turning
- * into a stack of thin gauges.
- */
+/* The bar is the row's own background, so the list stays scannable instead
+   of becoming a stack of thin gauges. */
 .board-row {
   position: relative;
   display: grid;
@@ -1817,11 +1786,9 @@ body {
   color: var(--text-dim);
 }
 
-/* ══════════ desktop ══════════
-   Below 900px this is a phone app: one column, bottom tab bar.
-   Above it, that same column stranded in the middle of a monitor looks
-   broken — so the shell widens, navigation moves to the top where a mouse
-   expects it, and the cookie gets a fixed comfortable size. */
+/* ---------- desktop ----------
+   Below 900px this is a phone app. Above it the shell widens and navigation
+   moves to the top. */
 
 /* one column on phones — the aside is desktop-only */
 .split {

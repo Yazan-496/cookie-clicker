@@ -5,12 +5,8 @@ interface Props {
   onDismiss: () => void
 }
 
-/**
- * Shown when the cookie changes tier. The new cookie is drawn in the banner
- * rather than described, so the reward is the thing itself — levelling past a
- * threshold with no acknowledgement is the most common way progression goes
- * unnoticed.
- */
+// Draws the new cookie rather than naming it — the reward is the thing
+// itself.
 export function TierUp({ tier, onDismiss }: Props) {
   const chips = chipLayout(Math.min(6, tier.chipCount))
   const gid = `up-${tier.id}`

@@ -4,11 +4,8 @@ const STORAGE_KEY = 'cookie-clicker:audio'
 
 export type SoundName = 'tap' | 'buy' | 'success' | 'error'
 
-/**
- * C-major, one note per ring from the centre outwards. A plain major scale
- * means any order of taps sounds consonant, so the cookie is playable rather
- * than merely noisy.
- */
+// C-major, one note per ring from the centre out. A plain major scale means
+// any order of taps sounds consonant.
 export const RING_NOTES = [
   { name: 'do', freq: 523.25 },
   { name: 're', freq: 587.33 },
@@ -43,11 +40,8 @@ function loadPrefs(): AudioPrefs {
   }
 }
 
-/**
- * Sounds are synthesised with the Web Audio API rather than loaded as files.
- * No assets to host, nothing to download, and the tap can be pitch-varied per
- * press — the same sample fired repeatedly is what makes clicker audio grating.
- */
+// Synthesised rather than loaded from files: no assets to host, and pitch can
+// vary per press. The same sample on repeat is what makes clicker audio grate.
 export function useSound() {
   const [prefs, setPrefs] = useState<AudioPrefs>(loadPrefs)
   const ctxRef = useRef<AudioContext | null>(null)
@@ -140,11 +134,8 @@ export function useSound() {
     [context, prefs.muted, prefs.volume, tone],
   )
 
-  /**
-   * Plays the note belonging to a ring. Two voices — a triangle body plus a
-   * quiet sine an octave up — give it a struck, bell-like edge rather than the
-   * flat buzz a single oscillator produces.
-   */
+  // Stacked harmonics give it a struck, bell-like edge; a single oscillator
+  // just buzzes.
   const playNote = useCallback(
     (ring: number) => {
       if (prefs.muted || prefs.volume <= 0) return

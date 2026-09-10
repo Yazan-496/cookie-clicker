@@ -5,11 +5,7 @@ interface Props {
   className?: string
 }
 
-/**
- * A shimmering placeholder shaped like the content that will replace it.
- * Matching the final layout is the point — a spinner or a line of text moves
- * everything when the real data lands.
- */
+// Shaped like the content it replaces, so nothing shifts when data lands.
 export function Skeleton({
   width = '100%',
   height = '1em',

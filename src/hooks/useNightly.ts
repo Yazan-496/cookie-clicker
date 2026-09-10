@@ -55,15 +55,10 @@ export function useNightly() {
     return () => clearInterval(timer)
   }, [])
 
-  /*
-   * Reconnect on load, but only for someone who has connected in this browser
-   * before. A first-time visitor — which includes anyone judging this — never
-   * gets a silent wallet prompt, while a returning player isn't made to click
-   * Connect on every refresh.
-   *
-   * Raced against a timeout: an unanswered request from the extension must
-   * never be able to hang the manual Connect button behind it.
-   */
+  // Reconnect on load only for someone who has connected here before, so a
+  // first-time visitor never gets a silent wallet prompt. Raced against a
+  // timeout — an unanswered request from the extension used to hang the
+  // manual Connect button behind it.
   useEffect(() => {
     if (!installed || publicKey || !hasConnectedBefore()) return
 

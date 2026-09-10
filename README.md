@@ -1,218 +1,194 @@
-# 🍪 Cookie Clicker
+# Cookie Clicker
 
-A mobile-first, on-chain idle game built on [Cookie Chain](https://www.cookiechain.wtf).
+A mobile-first idle game on [Cookie Chain](https://www.cookiechain.wtf). Tap the
+cookie to bake, then commit your score to the chain as a memo. Every bake is
+permanent and publicly verifiable on [Cookiescan](https://cookiescan.io), and
+the global leaderboard is read straight back off-chain — there is no database
+anywhere in this project.
 
-Tap the cookie to bake. When you're ready, commit your score to Cookie Chain —
-it's written on-chain as a memo, so every bake is permanent and publicly
-verifiable on [Cookiescan](https://cookiescan.io).
+Built for the *Create an App on Cookie Chain* bounty on Superteam Earn.
 
-Built for the **Create an App on Cookie Chain** bounty on Superteam Earn.
+**Live:** https://bake-on-cookie-chain.vercel.app
 
----
+## Required features
 
-## Why mobile-first
-
-Cookie Chain apps are overwhelmingly desktop dashboards. Cookie Clicker is built
-for a thumb: single column, large tap targets, safe-area insets, and no layout
-that breaks under 400px. It works on desktop too, but it's designed for a phone.
-
----
-
-## Features
-
-| Requirement | Where it lives |
+| Requirement | Where |
 | --- | --- |
 | Wallet connection (Nightly) | `src/hooks/useNightly.ts` |
-| Display connected wallet address | `src/components/ConnectButton.tsx` |
+| Display connected address | `src/components/ConnectButton.tsx`, `src/pages/ProfilePage.tsx` |
 | Transaction execution | `src/hooks/useBake.ts` |
 | Transaction confirmation handling | `src/hooks/useBake.ts` |
-| Error handling & user feedback | `src/lib/chain.ts` → `describeError()`, `src/components/TxStatus.tsx` |
+| Error handling and user feedback | `describeError()` in `src/lib/chain.ts`, `src/components/TxStatus.tsx` |
 
-Every transaction moves through a visible lifecycle — **signing → sending →
-confirming → confirmed** — and failures are translated into plain language
-rather than raw RPC errors. Cancelling in the wallet, running out of COOK, an
-expired blockhash and an unreachable RPC each produce their own message.
+Transactions move through a visible lifecycle — signing, sending, confirming,
+confirmed — and failures are translated into plain language instead of raw RPC
+output. Cancelling in the wallet, missing COOK, an expired blockhash and an
+unreachable RPC each get their own message.
 
----
+The app also checks your COOK balance before building a transaction, so a wallet
+with no gas gets an explanation and a link to the bridge rather than a failed
+signature request.
 
-## Tech stack
+## The game
 
-- **React 18** + **TypeScript** + **Vite 6**
-- **@solana/web3.js** — Cookie Chain is SVM-compatible, so Solana tooling works directly
-- **Nightly** wallet (required — MetaMask cannot add a custom SVM RPC)
-- No backend, no custom program deployment
+Tapping is free — no transaction, no gas. Cookies accumulate locally, and one
+explicit **Bake** writes the total to the chain.
 
----
+- **Five note rings.** The cookie is divided into five concentric zones playing
+  do, re, mi, fa, sol from the centre out. Each ring has its own reaction, and
+  the cookie dips toward wherever you press.
+- **Upgrades.** Four items with compounding prices — a rolling pin raises cookies
+  per tap, ovens, mixers and farms produce passively.
+- **Levels and cookie tiers.** Six cookies unlock with level, changing shape
+  rather than colour: a plain disc, then softer edges, hand-shaped irregularity,
+  scalloped rims, and finally a craggy cracked bake.
+- **Passive income pauses after 30 seconds idle.** Upgrades still pay, but only
+  while you are playing — otherwise the leaderboard would rank whoever left a tab
+  open longest.
 
-## Requirements
+## The leaderboard has no database
 
-- Node.js 18 or newer
-- The [Nightly](https://nightly.app) browser extension
-- A small amount of **COOK** for transaction fees
+No backend, no hosted state. Every bake references a fixed app marker:
 
----
+```
+Hy735uzbqzvS23XDn7ANu8mKrSQcjjj9Ccm8KZKgEpaY
+```
+
+One call to `getSignaturesForAddress` on that address returns every bake by every
+player. The marker is a program-derived address, so nobody holds a key for it —
+it is referenced, never signed for.
+
+**Why a marker rather than the Memo program directly:** the Memo program is
+shared. At the time of writing `keno`, `cookiejar`, `cookie-sheet` and
+`Cookiebox` all write to it, and a busy day would push this app's bakes out of
+the recent history. The marker gives the game its own namespace.
+
+The Memo program requires every account passed to it to be a signer, so the
+marker cannot ride on the memo instruction. It goes in a second zero-value
+transfer in the same transaction — same signature count, same fee.
+
+**Rankings credit the transaction signer read from the chain, not the memo
+text.** A memo can claim any score, but only one wallet signed and paid for it.
+
+## Trust model
+
+Anything stored in a browser can be edited by the person holding it, so the app
+assumes that will happen. The local counter is a buffer, never a source of truth.
+
+1. **The chain is authoritative.** The figure shown as *verified on Cookie Chain*
+   comes from memos actually written on-chain. The local number is labelled as
+   unverified.
+2. **The buffer is bounded.** A loaded save is clamped to what the elapsed time
+   could physically have produced — flat-out tapping plus whatever the owned
+   upgrades generate. A hand-edited trillion collapses back to a plausible
+   number and the clamp is logged.
+3. **Storage is tamper-evident.** Keys are SHA-256 hashed and values encrypted
+   with AES-GCM. Because GCM is authenticated, an edited value fails to decrypt
+   and is discarded.
+
+Point 3 is obfuscation, not security — the derivation secret ships in the bundle,
+so a determined user can extract it. It raises the cost of casual tampering
+without eliminating it. The point isn't to make the client tamper-proof, which is
+impossible; it's to make tampering pointless, because only the on-chain number
+counts.
+
+## Verifying a transaction without spending anything
+
+```bash
+npm run simulate                 # simulate a bake against Cookie Chain
+npm run simulate <address>       # simulate as a specific wallet
+```
+
+Simulation needs no gas and no signature, and returns the real program logs. The
+fee payer has to be an account that already exists on-chain — an unfunded wallet
+returns `AccountNotFound`.
 
 ## Running locally
 
 ```bash
-git clone <your-repo-url>
-cd cookie-clicker
 npm install
-npm run dev
+npm run dev              # http://localhost:5173
+npm run dev -- --host    # also reachable from a phone on the same network
+npm run build            # outputs to dist/
 ```
 
-Then open the printed URL (default `http://localhost:5173`).
+Requires Node 18+, the [Nightly](https://nightly.app) extension, and a small
+amount of COOK to bake. Everything except baking works without a wallet,
+including the leaderboard.
 
-To test on a phone on the same network:
+### Testing against devnet
+
+Cookie Chain is SVM-compatible, so the whole transaction path can be exercised
+against Solana devnet where SOL is free:
 
 ```bash
-npm run dev -- --host
+npm run dev:devnet
 ```
 
-Then open the Network URL shown in the terminal from your phone's browser.
-
-### Production build
-
-```bash
-npm run build     # outputs to dist/
-npm run preview   # serve the built output locally
-```
-
----
+An orange banner marks any non–Cookie Chain build. A plain `npm run build` always
+targets Cookie Chain; devnet needs the explicit flag.
 
 ## Configuration
 
-All chain configuration lives in `src/lib/chain.ts`:
+Chain settings live in `src/lib/chain.ts`:
 
 | Constant | Value |
 | --- | --- |
 | `COOKIE_CHAIN_RPC` | `https://rpc.cookiescan.io` |
 | `EXPLORER_URL` | `https://cookiescan.io` |
 | `MEMO_PROGRAM_ID` | `MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr` |
-| `USE_MEMO` | `true` |
+| `APP_MARKER` | derived from the Memo program |
+| `USE_MEMO` | `true` — set false to fall back to a zero-value self transfer |
 
-**Note on `USE_MEMO`:** scores are recorded using the standard SPL Memo program.
-If the Memo program is not deployed on Cookie Chain, set `USE_MEMO` to `false`
-and the app falls back to a zero-value self-transfer, which still produces a
-real, confirmable on-chain transaction.
+## Tech stack
 
----
+React 18, TypeScript, Vite 6, `@solana/web3.js`. Nightly wallet is required —
+MetaMask cannot add a custom SVM RPC. No backend and no custom program
+deployment. Sounds are synthesised with the Web Audio API, so there are no audio
+assets to host.
 
-## How a bake works
-
-1. Tapping the cookie increments the local score. No transaction, no gas.
-2. Pressing **Bake on Cookie Chain** builds a transaction containing a memo
-   instruction: `cookie-clicker|score:<score>|ts:<timestamp>`.
-3. A fresh blockhash is fetched and the transaction is signed by Nightly.
-4. The signed transaction is sent to the Cookie Chain RPC.
-5. Confirmation is awaited against the blockhash and last valid block height.
-6. On success, the signature is added to the on-chain bake history with a link
-   to Cookiescan. On failure, a human-readable error is shown.
-
-Keeping taps off-chain and batching them into one explicit transaction means the
-game stays instant and only spends gas when the player chooses to.
-
----
-
-## The global leaderboard has no database
-
-There is no backend, no database and no hosted state. The leaderboard is
-derived entirely from Cookie Chain.
-
-Every bake writes a memo and references a fixed **app marker** address:
-
-```
-Hy735uzbqzvS23XDn7ANu8mKrSQcjjj9Ccm8KZKgEpaY
-```
-
-The marker is a program-derived address off the Memo program, so it is off the
-ed25519 curve and nobody holds a key for it — it is only ever referenced, never
-signed for. One call to `getSignaturesForAddress` on it returns every bake by
-every player.
-
-**Why a marker rather than querying the Memo program directly:** the Memo
-program is shared. At the time of writing, `keno`, `cookiejar`, `cookie-sheet`
-and `Cookiebox` all write to it, and a busy day would push this app's bakes out
-of the recent history entirely. The marker gives Cookie Clicker its own
-namespace, so the leaderboard stays complete however busy the chain gets.
-
-The SPL Memo program requires every account passed to it to be a signer, so the
-marker cannot ride on the memo instruction. It goes in a second, zero-value
-transfer instruction in the same transaction — same signature count, same fee.
-
-**Rankings are attributed to the transaction signer read from chain, not to
-anything in the memo text.** A memo can claim any score, but it can only ever
-be credited to the wallet that signed and paid for it.
-
-### Verifying the transaction without spending anything
-
-```bash
-npm run simulate            # simulates a bake against Cookie Chain
-npm run simulate <address>  # simulate as a specific wallet
-```
-
-Simulation needs no gas and no signature. It returns the real program logs, so
-the instruction set can be validated before any COOK is spent. Note that the
-fee payer must be an account that exists on-chain — an unfunded wallet returns
-`AccountNotFound`.
-
-## Trust model
-
-Anything stored in the browser can be edited by the person holding the browser.
-Opening DevTools and setting the saved score to a trillion takes five seconds,
-so the app is built on the assumption that it will happen.
-
-**The local tap counter is a buffer, never a source of truth.** Two things
-follow from that:
-
-1. **The chain is authoritative.** The score shown as *"verified on Cookie
-   Chain"* is derived from memos actually written on-chain and read back via
-   `getSignaturesForAddress`. Writing one costs gas and is publicly auditable
-   on Cookiescan. The local number carries no authority and is labelled as such.
-
-2. **The local buffer is bounded by physics.** Progress is stored as
-   `{ score, since }`. On load — and again whenever the tab regains focus — the
-   score is clamped to `elapsed_seconds × 25`, the fastest any human could tap.
-   A hand-edited trillion collapses back to a plausible number, and the clamp is
-   logged to the console.
-
-3. **Storage is tamper-evident.** Keys are SHA-256 hashed so nothing in
-   DevTools is human-readable, and values are encrypted with AES-GCM via
-   Web Crypto. Because AES-GCM is authenticated, editing a stored value makes
-   decryption fail and the value is discarded rather than trusted.
-
-   This is deliberately described as *obfuscation*, not security. The
-   derivation secret ships in the bundle, so a determined user can extract it
-   and forge a value. It raises the cost of casual tampering; it does not
-   eliminate it.
-
-This does not make the client tamper-proof; nothing client-side can be. It
-makes tampering *pointless*, because the only number that counts is the one on
-Cookie Chain.
-
-## Project structure
+## Structure
 
 ```
 src/
-├── App.tsx                    game screen and state
-├── main.tsx                   entry point, Buffer polyfill
-├── styles.css                 mobile-first styles
+├── App.tsx                  shell, shared state, tab routing
+├── main.tsx
+├── polyfills.ts             Buffer, before anything else loads
+├── styles.css
 ├── lib/
-│   ├── chain.ts               RPC, transactions, on-chain history, errors
-│   ├── format.ts              compact score formatting
-│   └── nightly.ts             Nightly provider detection and types
+│   ├── chain.ts             RPC, transactions, history, leaderboard, errors
+│   ├── game.ts              upgrades, costs, levels
+│   ├── cookieTiers.ts       tier definitions and generated cookie outlines
+│   ├── secureStorage.ts     hashed keys, AES-GCM values
+│   ├── format.ts
+│   └── nightly.ts
 ├── hooks/
-│   ├── useNightly.ts          connect / disconnect / eager reconnect
-│   ├── useScore.ts            tamper-clamped local tap buffer
-│   └── useBake.ts             transaction lifecycle + on-chain history
+│   ├── useGame.ts           score, upgrades, passive income, idle timeout
+│   ├── useBake.ts           transaction lifecycle, on-chain history
+│   ├── useLeaderboard.ts
+│   ├── useNightly.ts        connect, disconnect, remembered reconnect
+│   ├── useGasBalance.ts
+│   ├── useSound.ts          Web Audio synthesis
+│   └── useTheme.ts
+├── pages/
+│   ├── BakePage.tsx
+│   ├── ShopPage.tsx
+│   ├── BoardPage.tsx
+│   └── ProfilePage.tsx
 └── components/
-    ├── ConnectButton.tsx      connect state and address display
-    ├── Cookie.tsx             tap target and crumb animation
-    ├── TxStatus.tsx           live transaction feedback
-    └── BakeHistory.tsx        confirmed bakes with explorer links
+    ├── Cookie.tsx           rings, hit detection, particles
+    ├── Leaderboard.tsx
+    ├── Shop.tsx
+    ├── LevelBar.tsx
+    ├── TierUp.tsx
+    ├── TxStatus.tsx
+    ├── BakeHistory.tsx
+    ├── ConnectButton.tsx
+    ├── Controls.tsx         theme and sound
+    ├── TabBar.tsx
+    ├── Skeleton.tsx
+    └── icons.tsx
 ```
-
----
 
 ## Licence
 

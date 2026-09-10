@@ -1,9 +1,7 @@
 import type { PublicKey, Transaction } from '@solana/web3.js'
 
-/**
- * Nightly injects a Solana provider at window.nightly.solana.
- * Cookie Chain requires Nightly — MetaMask cannot add a custom SVM RPC.
- */
+// Nightly injects a Solana provider at window.nightly.solana. Cookie Chain
+// needs it specifically — MetaMask can't add a custom SVM RPC.
 export interface NightlyProvider {
   connect(options?: { onlyIfTrusted?: boolean }): Promise<{ publicKey: PublicKey }>
   disconnect(): Promise<void>
