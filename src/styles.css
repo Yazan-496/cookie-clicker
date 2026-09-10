@@ -308,7 +308,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
+  width: 100%;
 }
 
 .score {
@@ -392,7 +393,7 @@ body {
 /* squash-and-stretch, with a springy settle */
 .cookie-body.is-squashing {
   animation:
-    squash 280ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    squash 360ms cubic-bezier(0.22, 1, 0.36, 1),
     hover-float 4.2s ease-in-out infinite;
 }
 
@@ -411,18 +412,29 @@ body {
   );
 }
 
+/*
+ * Impact curve: a fast hard squash, then an overshoot above rest, then a
+ * smaller counter-bounce before settling. The first frame is deliberately
+ * abrupt — a slow ease-in reads as mushy, the snap is what feels like contact.
+ */
 @keyframes squash {
   0% {
-    transform: scale(1, 1);
+    transform: scale(1, 1) rotate(0deg);
   }
-  28% {
-    transform: scale(1.13, 0.87);
+  14% {
+    transform: scale(1.18, 0.8) rotate(calc(var(--tilt, 0deg) * 0.4));
   }
-  58% {
-    transform: scale(0.95, 1.05);
+  38% {
+    transform: scale(0.9, 1.12) rotate(var(--tilt, 0deg));
+  }
+  62% {
+    transform: scale(1.06, 0.95) rotate(calc(var(--tilt, 0deg) * 0.5));
+  }
+  82% {
+    transform: scale(0.98, 1.02) rotate(calc(var(--tilt, 0deg) * 0.2));
   }
   100% {
-    transform: scale(1, 1);
+    transform: scale(1, 1) rotate(0deg);
   }
 }
 
@@ -506,14 +518,20 @@ body {
   animation: crumb-fly 750ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
+/* Two-stage arc so crumbs rise, slow, then fall — flat linear drift reads fake. */
 @keyframes crumb-fly {
   0% {
     transform: translate(0, 0) rotate(0deg) scale(var(--scale));
     opacity: 1;
   }
+  38% {
+    transform: translate(calc(var(--dx) * 0.55), var(--dy))
+      rotate(calc(var(--rot) * 0.4)) scale(var(--scale));
+    opacity: 1;
+  }
   100% {
-    transform: translate(var(--dx), calc(var(--dy) + 46px)) rotate(var(--rot))
-      scale(0.3);
+    transform: translate(var(--dx), calc(var(--dy) + 78px)) rotate(var(--rot))
+      scale(0.28);
     opacity: 0;
   }
 }
@@ -529,6 +547,297 @@ body {
 
 .hint-error {
   color: var(--error);
+}
+
+/* ---------- pages ---------- */
+
+.page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.page-title {
+  font-size: 1.32rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.page-sub {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.page-note {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.page-note a {
+  color: var(--accent);
+  word-break: break-all;
+}
+
+/* ---------- empty state ---------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 34px 20px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 2rem;
+  opacity: 0.75;
+}
+
+.empty-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.empty-body {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  max-width: 34ch;
+}
+
+/* ---------- shop rows ---------- */
+
+.upgrade-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upgrade-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(28, 20, 48, 0.85);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.upgrade-row:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.upgrade-row.is-affordable {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 18px rgba(255, 181, 69, 0.14);
+}
+
+.upgrade-row.is-affordable:active {
+  transform: scale(0.98);
+}
+
+.upgrade-row-icon {
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.upgrade-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.upgrade-row-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.upgrade-owned {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.upgrade-row-blurb {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.upgrade-row-price {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* ---------- wallet card ---------- */
+
+.wallet-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(28, 20, 48, 0.75);
+}
+
+.wallet-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--text-dim);
+}
+
+.wallet-address {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.76rem;
+  word-break: break-all;
+  text-align: left;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.wallet-address:hover {
+  color: var(--accent);
+}
+
+.wallet-copied {
+  font-size: 0.66rem;
+  color: var(--success);
+  min-height: 1em;
+}
+
+.wallet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.wallet-refresh {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- tab bar ---------- */
+
+.tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  margin: 0 -20px;
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+  background: rgba(18, 12, 28, 0.92);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px 6px;
+  background: none;
+  border: none;
+  border-radius: 12px;
+  color: var(--text-dim);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab.is-active {
+  color: var(--accent);
+  background: rgba(255, 181, 69, 0.09);
+}
+
+.tab-icon {
+  position: relative;
+  font-size: 1.16rem;
+  line-height: 1;
+  transition: transform 0.16s ease;
+}
+
+.tab.is-active .tab-icon {
+  transform: translateY(-1px) scale(1.1);
+}
+
+.tab-dot {
+  position: absolute;
+  top: -2px;
+  right: -5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 7px var(--accent);
+}
+
+.tab-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 /* ---------- gas explainer ---------- */
@@ -881,6 +1190,134 @@ body {
 
 .footer a {
   color: var(--text-dim);
+}
+
+/* ══════════ desktop ══════════
+   Below 900px this is a phone app: one column, bottom tab bar.
+   Above it, that same column stranded in the middle of a monitor looks
+   broken — so the shell widens, navigation moves to the top where a mouse
+   expects it, and the cookie gets a fixed comfortable size. */
+
+@media (min-width: 900px) {
+  body {
+    padding: 0;
+  }
+
+  .app {
+    max-width: 940px;
+    padding: 0 32px 40px;
+    min-height: 100dvh;
+  }
+
+  .header {
+    padding: 26px 0 18px;
+  }
+
+  .brand-name {
+    font-size: 1.2rem;
+  }
+
+  /* navigation to the top, as a centred segmented control */
+  .tabbar {
+    position: sticky;
+    top: 0;
+    order: -1;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin: 0 0 22px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    border-radius: 999px;
+    align-self: center;
+    background: rgba(28, 20, 48, 0.82);
+  }
+
+  .tab {
+    flex-direction: row;
+    gap: 8px;
+    padding: 9px 20px;
+    border-radius: 999px;
+  }
+
+  .tab-icon {
+    font-size: 1rem;
+  }
+
+  .tab-label {
+    font-size: 0.82rem;
+  }
+
+  .main {
+    gap: 26px;
+    padding-bottom: 0;
+  }
+
+  /* the cookie shouldn't balloon on a big screen */
+  .cookie {
+    width: 230px;
+  }
+
+  .score-value {
+    font-size: 3.7rem;
+  }
+
+  /* two columns on the pages that have enough to fill them */
+  .page {
+    gap: 18px;
+  }
+
+  .upgrade-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stats {
+    gap: 12px;
+  }
+
+  .stat {
+    padding: 14px 8px;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.62rem;
+  }
+
+  .board-row {
+    padding: 11px 15px;
+  }
+
+  .page-title {
+    font-size: 1.6rem;
+  }
+
+  .btn-primary {
+    max-width: 420px;
+    align-self: center;
+  }
+
+  .gas-card,
+  .tx-status {
+    max-width: 520px;
+    align-self: center;
+  }
+
+  .wallet-address {
+    font-size: 0.86rem;
+  }
+}
+
+@media (min-width: 1240px) {
+  .app {
+    max-width: 1080px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

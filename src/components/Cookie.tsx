@@ -48,6 +48,7 @@ export function Cookie({ onTap }: Props) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [ripples, setRipples] = useState<Ripple[]>([])
   const [squashing, setSquashing] = useState(false)
+  const [tilt, setTilt] = useState(0)
   const nextId = useRef(0)
   const squashTimer = useRef<number | null>(null)
 
@@ -86,6 +87,9 @@ export function Cookie({ onTap }: Props) {
         setRipples((prev) => prev.filter((r) => r.id !== ripple.id))
       }, PARTICLE_MS)
 
+      // A small random tilt each tap stops repeated presses looking identical.
+      setTilt((Math.random() - 0.5) * 5)
+
       // Restart the squash animation cleanly on every tap.
       setSquashing(false)
       if (squashTimer.current) window.clearTimeout(squashTimer.current)
@@ -107,6 +111,7 @@ export function Cookie({ onTap }: Props) {
 
       <span
         className={`cookie-body ${squashing ? 'is-squashing' : ''}`}
+        style={{ '--tilt': `${tilt}deg` } as React.CSSProperties}
         aria-hidden="true"
       >
         <svg viewBox="0 0 100 100" className="cookie-art">
