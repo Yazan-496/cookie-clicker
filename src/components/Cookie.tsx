@@ -213,19 +213,6 @@ export function Cookie({ onTap, tier, tapValue, celebrating }: Props) {
             </g>
           ))}
 
-          {/* Ring guides — faint until struck, so the cookie reads as playable */}
-          {RING_EDGES.map((edge, index) => (
-            <circle
-              key={edge}
-              className={`ring-guide ${hitRing === index ? 'is-hit' : ''}`}
-              cx="50"
-              cy="50"
-              r={edge * 46}
-              fill="none"
-              stroke="#fff"
-            />
-          ))}
-
           {tier.detail === 'flecks' && (
             <g className="cookie-sparkles" fill={tier.chip[0]}>
               <path d="M28 26 29.2 22 30.4 26 34 27.2 30.4 28.4 29.2 32 28 28.4 24.4 27.2Z" />

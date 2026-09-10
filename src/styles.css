@@ -910,23 +910,6 @@ body {
   }
 }
 
-/* ---------- ring guides ---------- */
-
-.ring-guide {
-  stroke-width: 0.7;
-  opacity: 0.14;
-  transition: opacity 0.2s ease, stroke-width 0.2s ease;
-}
-
-.ring-guide.is-hit {
-  opacity: 0.85;
-  stroke-width: 2.4;
-}
-
-.cookie:hover .ring-guide {
-  opacity: 0.26;
-}
-
 .pop-note {
   display: block;
   font-size: 0.58rem;
