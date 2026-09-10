@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { BakeHistory } from './components/BakeHistory'
 import { ConnectButton } from './components/ConnectButton'
 import { Cookie } from './components/Cookie'
@@ -22,10 +22,13 @@ export default function App() {
   const gas = useGasBalance(publicKey)
   const board = useLeaderboard()
 
+  const [showGasHelp, setShowGasHelp] = useState(false)
+
   const address = publicKey?.toBase58() ?? null
   const outOfGas = gas.balance === 0
-  const canBake =
-    Boolean(address) && game.totalBaked > 0 && !bakeState.busy && !outOfGas
+  // Deliberately not gated on gas — a first-time visitor should be able to
+  // play and press the button without being met by a warning they can't act on.
+  const canBake = Boolean(address) && game.totalBaked > 0 && !bakeState.busy
 
   // The authoritative score: the highest total ever written to Cookie Chain.
   const onChainScore = useMemo(
@@ -34,11 +37,17 @@ export default function App() {
   )
 
   const handleBake = useCallback(async () => {
+    // Explain gas at the moment it is needed, not before.
+    if (outOfGas) {
+      setShowGasHelp(true)
+      return
+    }
+    setShowGasHelp(false)
     await bakeState.bake(game.totalBaked)
     // Baking spends gas and changes the standings — refresh both.
     void gas.refresh()
     void board.refresh()
-  }, [bakeState, game.totalBaked, gas, board])
+  }, [bakeState, game.totalBaked, gas, board, outOfGas])
 
   return (
     <div className="app">
@@ -92,30 +101,53 @@ export default function App() {
         <button className="btn btn-primary" onClick={handleBake} disabled={!canBake}>
           {bakeState.busy
             ? 'Baking…'
-            : outOfGas
-              ? `No ${GAS_TOKEN} for gas`
-              : `Bake ${formatScore(game.totalBaked)} on Cookie Chain`}
+            : `Bake ${formatScore(game.totalBaked)} on Cookie Chain`}
         </button>
 
         {!address && (
           <p className="hint">Connect Nightly to record your score on Cookie Chain.</p>
         )}
-        {address && outOfGas && (
-          <p className="hint hint-error">
-            This wallet holds no {GAS_TOKEN}. A bake costs about 0.000005{' '}
-            {GAS_TOKEN} — ask for a little in the{' '}
-            <a href="https://t.me/TheCookieNetChain" target="_blank" rel="noreferrer">
-              Cookie Chain Telegram
-            </a>
-            .
-          </p>
+
+        {showGasHelp && (
+          <div className="gas-card">
+            <div className="gas-head">
+              <span className="gas-icon" aria-hidden="true">
+                ⛽
+              </span>
+              <span>A little {GAS_TOKEN} is needed to write to the chain</span>
+              <button
+                className="tx-close"
+                onClick={() => setShowGasHelp(false)}
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+            <p className="gas-body">
+              Baking is a real Cookie Chain transaction. One {GAS_TOKEN} covers
+              hundreds of thousands of them.
+            </p>
+            <div className="gas-links">
+              <a
+                className="btn btn-ghost"
+                href="https://hyperlane.cookiescan.io"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Cookie Chain Bridge ↗
+              </a>
+              <a
+                className="btn btn-ghost"
+                href="https://t.me/TheCookieNetChain"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ask in Telegram ↗
+              </a>
+            </div>
+          </div>
         )}
-        {address && gas.balance !== null && gas.balance > 0 && (
-          <p className="hint">
-            {gas.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}{' '}
-            {GAS_TOKEN} available for gas
-          </p>
-        )}
+
         {walletError && <p className="hint hint-error">{walletError}</p>}
 
         <TxStatus
