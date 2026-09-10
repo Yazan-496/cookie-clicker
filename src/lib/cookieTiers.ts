@@ -1,36 +1,40 @@
+export type CookieShape = 'circle' | 'soft' | 'organic' | 'scalloped' | 'craggy'
+
 export interface CookieTier {
   id: string
   name: string
   minLevel: number
-  /** Dough gradient: centre → mid → edge. */
+  /** Dough gradient: centre → mid → edge. Always in the baked-brown family. */
   dough: [string, string, string]
   rim: string
   chip: [string, string]
   chipCount: number
-  /** Extra flourish drawn over the dough. */
-  flourish: 'none' | 'frosting' | 'sparkle' | 'glaze'
-  /** Which looping idle animation this tier uses. */
+  shape: CookieShape
+  /** Baked detail drawn over the dough. */
+  detail: 'none' | 'cracks' | 'drizzle' | 'flecks'
   idle: 'float' | 'wobble' | 'breathe' | 'spin-drift'
   glow: string
 }
 
 /**
- * The cookie changes as you level, so progress is visible on the thing you're
- * actually looking at rather than only in a number. Each tier also swaps the
- * idle animation — the same loop for an hour is what makes it read as static.
+ * Progression is shape and craft, not colour. Every tier stays in the
+ * baked-brown range — a cookie that turns pink stops reading as a cookie. What
+ * changes is the silhouette: a plain disc at the start, then softer edges,
+ * hand-shaped irregularity, scalloped rims, and finally a craggy, cracked bake.
  */
 export const COOKIE_TIERS: CookieTier[] = [
   {
     id: 'dough',
     name: 'Plain Dough',
     minLevel: 1,
-    dough: ['#f2cd9c', '#dcb078', '#b8894c'],
-    rim: '#8f6635',
-    chip: ['#8a6238', '#5b3d1d'],
-    chipCount: 4,
-    flourish: 'none',
+    dough: ['#f4dcb6', '#dcb87f', '#b8904f'],
+    rim: '#96703b',
+    chip: ['#b98d5c', '#8a6238'],
+    chipCount: 3,
+    shape: 'circle',
+    detail: 'none',
     idle: 'float',
-    glow: 'rgba(255, 200, 130, 0.22)',
+    glow: 'rgba(232, 190, 130, 0.24)',
   },
   {
     id: 'classic',
@@ -39,8 +43,9 @@ export const COOKIE_TIERS: CookieTier[] = [
     dough: ['#f0be82', '#d59a55', '#a96c31'],
     rim: '#7d4d20',
     chip: ['#7a4e28', '#331d0d'],
-    chipCount: 8,
-    flourish: 'none',
+    chipCount: 7,
+    shape: 'soft',
+    detail: 'none',
     idle: 'wobble',
     glow: 'rgba(255, 168, 61, 0.28)',
   },
@@ -48,49 +53,53 @@ export const COOKIE_TIERS: CookieTier[] = [
     id: 'double',
     name: 'Double Chocolate',
     minLevel: 12,
-    dough: ['#8a5a3c', '#5f3a24', '#3c2214'],
-    rim: '#2a1710',
-    chip: ['#d9a05f', '#8a5a2b'],
-    chipCount: 10,
-    flourish: 'none',
+    dough: ['#a2714a', '#6f4830', '#42281a'],
+    rim: '#2c1a10',
+    chip: ['#e0b077', '#9a6a3c'],
+    chipCount: 9,
+    shape: 'organic',
+    detail: 'none',
     idle: 'breathe',
-    glow: 'rgba(217, 160, 95, 0.3)',
+    glow: 'rgba(200, 148, 92, 0.3)',
   },
   {
-    id: 'frosted',
-    name: 'Frosted',
+    id: 'artisan',
+    name: 'Artisan Bake',
     minLevel: 22,
-    dough: ['#ffd9ec', '#f2a8cd', '#cf74a4'],
-    rim: '#a8567f',
-    chip: ['#ffffff', '#ffd9ec'],
-    chipCount: 9,
-    flourish: 'frosting',
-    idle: 'spin-drift',
-    glow: 'rgba(255, 153, 204, 0.34)',
+    dough: ['#f2c584', '#cb8f47', '#8f5c26'],
+    rim: '#6b431a',
+    chip: ['#6b451f', '#2e1a0b'],
+    chipCount: 10,
+    shape: 'scalloped',
+    detail: 'cracks',
+    idle: 'wobble',
+    glow: 'rgba(232, 160, 74, 0.32)',
   },
   {
     id: 'golden',
-    name: 'Golden',
+    name: 'Golden Bake',
     minLevel: 35,
-    dough: ['#fff2b8', '#ffce4d', '#d19a1a'],
-    rim: '#a3760c',
-    chip: ['#fff6d0', '#e0a92a'],
-    chipCount: 10,
-    flourish: 'sparkle',
+    dough: ['#ffe6ab', '#e0aa4e', '#a8761f'],
+    rim: '#7e5711',
+    chip: ['#7a4e28', '#2e1a0b'],
+    chipCount: 11,
+    shape: 'scalloped',
+    detail: 'drizzle',
     idle: 'breathe',
-    glow: 'rgba(255, 206, 77, 0.45)',
+    glow: 'rgba(255, 200, 90, 0.4)',
   },
   {
-    id: 'cosmic',
-    name: 'Cosmic',
+    id: 'legendary',
+    name: 'Legendary Bake',
     minLevel: 50,
-    dough: ['#c9b6ff', '#7d5bd6', '#3d2a75'],
-    rim: '#251845',
-    chip: ['#ffe9a8', '#ff9ad5'],
+    dough: ['#d9a86a', '#8a5630', '#3f2413'],
+    rim: '#26150a',
+    chip: ['#ffd98a', '#b07a2e'],
     chipCount: 12,
-    flourish: 'glaze',
+    shape: 'craggy',
+    detail: 'flecks',
     idle: 'spin-drift',
-    glow: 'rgba(160, 120, 255, 0.45)',
+    glow: 'rgba(255, 190, 100, 0.45)',
   },
 ]
 
@@ -102,24 +111,62 @@ export function tierFor(level: number): CookieTier {
   return match
 }
 
-/** The next tier and how far away it is, for the progress hint. */
 export function nextTier(level: number): CookieTier | null {
   return COOKIE_TIERS.find((tier) => tier.minLevel > level) ?? null
+}
+
+const SHAPE_SETTINGS: Record<CookieShape, { lobes: number; amplitude: number }> = {
+  circle: { lobes: 0, amplitude: 0 },
+  soft: { lobes: 5, amplitude: 0.9 },
+  organic: { lobes: 7, amplitude: 2.1 },
+  scalloped: { lobes: 13, amplitude: 2.6 },
+  craggy: { lobes: 9, amplitude: 3.4 },
+}
+
+/**
+ * Builds the cookie outline by sweeping a circle and perturbing the radius
+ * with a sine wave. More lobes means a finer scalloped rim; more amplitude
+ * means a rougher, more hand-shaped edge.
+ */
+export function cookiePath(shape: CookieShape, radius = 46): string {
+  const { lobes, amplitude } = SHAPE_SETTINGS[shape]
+  if (lobes === 0) {
+    return `M50 ${50 - radius}a${radius} ${radius} 0 1 0 0.01 0Z`
+  }
+
+  const steps = 96
+  let d = ''
+  for (let i = 0; i <= steps; i += 1) {
+    const t = (i / steps) * Math.PI * 2
+    // A second, slower wave keeps scalloped rims from looking machine-cut.
+    const r =
+      radius + Math.sin(t * lobes) * amplitude + Math.sin(t * 3 + 1.2) * (amplitude * 0.3)
+    const x = 50 + Math.cos(t) * r
+    const y = 50 + Math.sin(t) * r
+    d += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)}`
+  }
+  return `${d}Z`
 }
 
 /** Deterministic chip placement so a tier always looks the same. */
 export function chipLayout(count: number) {
   const chips: { cx: number; cy: number; r: number }[] = []
-  // Golden-angle spiral keeps chips evenly spread without overlapping.
   const golden = 2.39996
   for (let i = 0; i < count; i += 1) {
-    const radius = 11 + 27 * Math.sqrt((i + 0.6) / count)
+    const radius = 10 + 25 * Math.sqrt((i + 0.6) / count)
     const angle = i * golden
     chips.push({
       cx: 50 + Math.cos(angle) * radius,
       cy: 50 + Math.sin(angle) * radius,
-      r: 3.4 + ((i * 7) % 5) * 0.72,
+      r: 3.2 + ((i * 7) % 5) * 0.7,
     })
   }
   return chips
 }
+
+/** Baked cracks, placed deterministically per tier. */
+export const CRACK_PATHS = [
+  'M32 38c5 4 3 9 8 12s9-1 12 4',
+  'M64 32c-3 5 1 8-2 12s-8 3-9 8',
+  'M38 68c4-2 8 2 12-1',
+]

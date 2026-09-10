@@ -1,5 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
-import { chipLayout, type CookieTier } from '../lib/cookieTiers'
+import {
+  chipLayout,
+  cookiePath,
+  CRACK_PATHS,
+  type CookieTier,
+} from '../lib/cookieTiers'
 import { RING_COUNT, RING_NOTES } from '../hooks/useSound'
 
 interface Props {
@@ -135,29 +140,31 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
             </linearGradient>
           </defs>
 
-          <circle cx="50" cy="50" r="47" fill={tier.rim} />
-          <circle cx="50" cy="50" r="46" fill={`url(#${gid}-dough)`} />
-          <ellipse cx="42" cy="34" rx="30" ry="24" fill={`url(#${gid}-sheen)`} />
+          <path d={cookiePath(tier.shape, 47)} fill={tier.rim} />
+          <path d={cookiePath(tier.shape, 46)} fill={`url(#${gid}-dough)`} />
+          <ellipse cx="42" cy="34" rx="29" ry="23" fill={`url(#${gid}-sheen)`} />
 
-          {tier.flourish === 'frosting' && (
-            <path
-              d="M14 42c9-9 20 6 30-2s18 6 27-3 12 4 15 1"
-              fill="none"
-              stroke="#fff"
-              strokeWidth="7"
-              strokeLinecap="round"
-              opacity="0.85"
-            />
-          )}
+          {tier.detail === 'cracks' &&
+            CRACK_PATHS.map((d) => (
+              <path
+                key={d}
+                d={d}
+                fill="none"
+                stroke={tier.rim}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                opacity="0.4"
+              />
+            ))}
 
-          {tier.flourish === 'glaze' && (
+          {tier.detail === 'drizzle' && (
             <path
-              d="M12 54c10 8 20-8 30 0s18-10 28-2 14-4 18-1"
+              d="M16 50c9 7 17-6 26 0s16-8 25-2 11-3 15 0"
               fill="none"
-              stroke="#ffe9a8"
-              strokeWidth="5"
+              stroke={tier.rim}
+              strokeWidth="3.4"
               strokeLinecap="round"
-              opacity="0.6"
+              opacity="0.42"
             />
           )}
 
@@ -194,11 +201,12 @@ export function Cookie({ onTap, tier, tapValue }: Props) {
             />
           ))}
 
-          {tier.flourish === 'sparkle' && (
-            <g className="cookie-sparkles" fill="#fffdf0">
+          {tier.detail === 'flecks' && (
+            <g className="cookie-sparkles" fill={tier.chip[0]}>
               <path d="M28 26 29.2 22 30.4 26 34 27.2 30.4 28.4 29.2 32 28 28.4 24.4 27.2Z" />
               <path d="M70 62 71 59 72 62 75 63 72 64 71 67 70 64 67 63Z" />
               <path d="M58 22 58.9 19.5 59.8 22 62.3 22.9 59.8 23.8 58.9 26.3 58 23.8 55.5 22.9Z" />
+              <path d="M38 76 38.9 73.5 39.8 76 42.3 76.9 39.8 77.8 38.9 80.3 38 77.8 35.5 76.9Z" />
             </g>
           )}
         </svg>
