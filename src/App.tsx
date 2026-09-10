@@ -2,21 +2,27 @@ import { useCallback, useMemo } from 'react'
 import { BakeHistory } from './components/BakeHistory'
 import { ConnectButton } from './components/ConnectButton'
 import { Cookie } from './components/Cookie'
+import { LevelBar } from './components/LevelBar'
+import { Shop } from './components/Shop'
 import { TxStatus } from './components/TxStatus'
 import { useBake } from './hooks/useBake'
+import { useGame } from './hooks/useGame'
+import { useGasBalance } from './hooks/useGasBalance'
 import { useNightly } from './hooks/useNightly'
-import { useScore } from './hooks/useScore'
 import { formatScore } from './lib/format'
-import { IS_COOKIE_CHAIN, NETWORK_NAME } from './lib/chain'
+import { GAS_TOKEN, IS_COOKIE_CHAIN, NETWORK_NAME } from './lib/chain'
 
 export default function App() {
   const { publicKey, connecting, error: walletError, installed, connect, disconnect } =
     useNightly()
-  const { score, tap } = useScore()
+  const game = useGame()
   const bakeState = useBake(publicKey)
+  const gas = useGasBalance(publicKey)
 
   const address = publicKey?.toBase58() ?? null
-  const canBake = Boolean(address) && score > 0 && !bakeState.busy
+  const outOfGas = gas.balance === 0
+  const canBake =
+    Boolean(address) && game.totalBaked > 0 && !bakeState.busy && !outOfGas
 
   // The authoritative score: the highest total ever written to Cookie Chain.
   const onChainScore = useMemo(
@@ -25,8 +31,10 @@ export default function App() {
   )
 
   const handleBake = useCallback(async () => {
-    await bakeState.bake(score)
-  }, [bakeState, score])
+    await bakeState.bake(game.totalBaked)
+    // Baking spends gas — pull the fresh balance.
+    void gas.refresh()
+  }, [bakeState, game.totalBaked, gas])
 
   return (
     <div className="app">
@@ -38,9 +46,7 @@ export default function App() {
 
       <header className="header">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            🍪
-          </span>
+          <span className="level-badge">LV {game.progress.level}</span>
           <span className="brand-name">Cookie Clicker</span>
         </div>
         <ConnectButton
@@ -54,27 +60,56 @@ export default function App() {
 
       <main className="main">
         <div className="score" aria-live="polite">
-          <span className="score-value" title={score.toLocaleString()}>
-            {formatScore(score)}
+          <span className="score-value" title={game.score.toLocaleString()}>
+            {formatScore(game.score)}
           </span>
-          <span className="score-label">cookies baked</span>
+          <span className="score-label">cookies</span>
 
-          <span className="score-verified">
-            {onChainScore > 0
-              ? `${formatScore(onChainScore)} verified on Cookie Chain`
-              : 'not yet verified on-chain'}
-          </span>
+          <div className="score-rates">
+            <span className="rate">+{formatScore(game.tapValue)} / tap</span>
+            {game.cps > 0 && (
+              <span className="rate rate-passive">
+                +{formatScore(game.cps)} / sec
+              </span>
+            )}
+          </div>
         </div>
 
-        <Cookie onTap={tap} />
+        <LevelBar progress={game.progress} />
+
+        <Cookie onTap={game.tap} />
+
+        <span className="score-verified">
+          {onChainScore > 0
+            ? `${formatScore(onChainScore)} verified on Cookie Chain`
+            : 'not yet verified on-chain'}
+        </span>
 
         <button className="btn btn-primary" onClick={handleBake} disabled={!canBake}>
-          {bakeState.busy ? 'Baking…' : 'Bake on Cookie Chain'}
+          {bakeState.busy
+            ? 'Baking…'
+            : outOfGas
+              ? `No ${GAS_TOKEN} for gas`
+              : `Bake ${formatScore(game.totalBaked)} on Cookie Chain`}
         </button>
 
         {!address && (
+          <p className="hint">Connect Nightly to record your score on Cookie Chain.</p>
+        )}
+        {address && outOfGas && (
+          <p className="hint hint-error">
+            This wallet holds no {GAS_TOKEN}. A bake costs about 0.000005{' '}
+            {GAS_TOKEN} — ask for a little in the{' '}
+            <a href="https://t.me/TheCookieNetChain" target="_blank" rel="noreferrer">
+              Cookie Chain Telegram
+            </a>
+            .
+          </p>
+        )}
+        {address && gas.balance !== null && gas.balance > 0 && (
           <p className="hint">
-            Connect Nightly to record your score on Cookie Chain.
+            {gas.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}{' '}
+            {GAS_TOKEN} available for gas
           </p>
         )}
         {walletError && <p className="hint hint-error">{walletError}</p>}
@@ -85,6 +120,13 @@ export default function App() {
           error={bakeState.error}
           signature={bakeState.signature}
           onDismiss={bakeState.reset}
+        />
+
+        <Shop
+          owned={game.owned}
+          prices={game.prices}
+          score={game.score}
+          onBuy={game.buy}
         />
 
         <BakeHistory records={bakeState.history} />

@@ -86,6 +86,20 @@ export function buildBakeTransaction(
   return tx
 }
 
+/** Native token of Cookie Chain, used for fees. */
+export const GAS_TOKEN = 'COOK'
+const DECIMALS = 1_000_000_000
+
+/**
+ * Reads the player's COOK balance. Fees run about 0.000005 COOK per signature,
+ * so any non-zero balance is plenty — but zero means a bake would fail, and it
+ * is better to say so before asking the wallet to sign.
+ */
+export async function fetchGasBalance(player: PublicKey): Promise<number> {
+  const lamports = await connection.getBalance(player, 'confirmed')
+  return lamports / DECIMALS
+}
+
 export interface BakeRecord {
   signature: string
   score: number
