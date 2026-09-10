@@ -114,6 +114,48 @@ game stays instant and only spends gas when the player chooses to.
 
 ---
 
+## The global leaderboard has no database
+
+There is no backend, no database and no hosted state. The leaderboard is
+derived entirely from Cookie Chain.
+
+Every bake writes a memo and references a fixed **app marker** address:
+
+```
+Hy735uzbqzvS23XDn7ANu8mKrSQcjjj9Ccm8KZKgEpaY
+```
+
+The marker is a program-derived address off the Memo program, so it is off the
+ed25519 curve and nobody holds a key for it — it is only ever referenced, never
+signed for. One call to `getSignaturesForAddress` on it returns every bake by
+every player.
+
+**Why a marker rather than querying the Memo program directly:** the Memo
+program is shared. At the time of writing, `keno`, `cookiejar`, `cookie-sheet`
+and `Cookiebox` all write to it, and a busy day would push this app's bakes out
+of the recent history entirely. The marker gives Cookie Clicker its own
+namespace, so the leaderboard stays complete however busy the chain gets.
+
+The SPL Memo program requires every account passed to it to be a signer, so the
+marker cannot ride on the memo instruction. It goes in a second, zero-value
+transfer instruction in the same transaction — same signature count, same fee.
+
+**Rankings are attributed to the transaction signer read from chain, not to
+anything in the memo text.** A memo can claim any score, but it can only ever
+be credited to the wallet that signed and paid for it.
+
+### Verifying the transaction without spending anything
+
+```bash
+npm run simulate            # simulates a bake against Cookie Chain
+npm run simulate <address>  # simulate as a specific wallet
+```
+
+Simulation needs no gas and no signature. It returns the real program logs, so
+the instruction set can be validated before any COOK is spent. Note that the
+fee payer must be an account that exists on-chain — an unfunded wallet returns
+`AccountNotFound`.
+
 ## Trust model
 
 Anything stored in the browser can be edited by the person holding the browser.

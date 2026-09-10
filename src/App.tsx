@@ -2,12 +2,14 @@ import { useCallback, useMemo } from 'react'
 import { BakeHistory } from './components/BakeHistory'
 import { ConnectButton } from './components/ConnectButton'
 import { Cookie } from './components/Cookie'
+import { Leaderboard } from './components/Leaderboard'
 import { LevelBar } from './components/LevelBar'
 import { Shop } from './components/Shop'
 import { TxStatus } from './components/TxStatus'
 import { useBake } from './hooks/useBake'
 import { useGame } from './hooks/useGame'
 import { useGasBalance } from './hooks/useGasBalance'
+import { useLeaderboard } from './hooks/useLeaderboard'
 import { useNightly } from './hooks/useNightly'
 import { formatScore } from './lib/format'
 import { GAS_TOKEN, IS_COOKIE_CHAIN, NETWORK_NAME } from './lib/chain'
@@ -18,6 +20,7 @@ export default function App() {
   const game = useGame()
   const bakeState = useBake(publicKey)
   const gas = useGasBalance(publicKey)
+  const board = useLeaderboard()
 
   const address = publicKey?.toBase58() ?? null
   const outOfGas = gas.balance === 0
@@ -32,9 +35,10 @@ export default function App() {
 
   const handleBake = useCallback(async () => {
     await bakeState.bake(game.totalBaked)
-    // Baking spends gas — pull the fresh balance.
+    // Baking spends gas and changes the standings — refresh both.
     void gas.refresh()
-  }, [bakeState, game.totalBaked, gas])
+    void board.refresh()
+  }, [bakeState, game.totalBaked, gas, board])
 
   return (
     <div className="app">
@@ -127,6 +131,17 @@ export default function App() {
           prices={game.prices}
           score={game.score}
           onBuy={game.buy}
+        />
+
+        <Leaderboard
+          entries={board.entries}
+          players={board.players}
+          totalBaked={board.totalBaked}
+          bakes={board.bakes}
+          loading={board.loading}
+          error={board.error}
+          currentPlayer={address}
+          onRefresh={board.refresh}
         />
 
         <BakeHistory records={bakeState.history} />

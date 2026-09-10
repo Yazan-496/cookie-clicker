@@ -40,6 +40,23 @@ export const MEMO_PROGRAM_ID = new PublicKey(
 
 export const USE_MEMO = true
 
+/**
+ * A deterministic address that every bake references, giving this app its own
+ * namespace on-chain.
+ *
+ * The Memo program is shared — keno, cookiejar and others write to it too — so
+ * querying it directly means this app's bakes compete for room in the recent
+ * history and would eventually be pushed out. Querying the marker instead
+ * returns only Cookie Clicker transactions, however busy the chain gets.
+ *
+ * It is a program-derived address, so it is off the ed25519 curve and nobody
+ * holds a key for it. It only ever gets referenced, never signed for.
+ */
+export const APP_MARKER = PublicKey.findProgramAddressSync(
+  [Buffer.from('cookie-clicker')],
+  MEMO_PROGRAM_ID,
+)[0]
+
 export const connection = new Connection(COOKIE_CHAIN_RPC, 'confirmed')
 
 export function explorerTxUrl(signature: string): string {
@@ -82,6 +99,18 @@ export function buildBakeTransaction(
       }),
     )
   }
+
+  // Tag the transaction with the app marker so it lands in this app's own
+  // namespace. The SPL Memo program requires every account passed to it to be
+  // a signer, so the marker cannot ride on the memo instruction — it goes in a
+  // zero-value transfer instead. Same signature count, same fee.
+  tx.add(
+    SystemProgram.transfer({
+      fromPubkey: player,
+      toPubkey: APP_MARKER,
+      lamports: 0,
+    }),
+  )
 
   return tx
 }
@@ -138,6 +167,84 @@ export async function fetchBakeHistory(
       },
     ]
   })
+}
+
+export interface LeaderboardEntry {
+  player: string
+  score: number
+  signature: string
+  at: number
+}
+
+export interface LeaderboardStats {
+  entries: LeaderboardEntry[]
+  players: number
+  totalBaked: number
+  bakes: number
+}
+
+/**
+ * Builds a global leaderboard from Cookie Chain itself.
+ *
+ * Every bake is a memo on the shared Memo program, so one call to
+ * getSignaturesForAddress returns every player's bakes — not just this
+ * wallet's. Memos are filtered first (free, they ride along with the
+ * signature) and only matching transactions are then fetched, in a single
+ * batch, to read the real fee payer.
+ *
+ * Reading the signer from the transaction rather than trusting the memo text
+ * is what makes this hard to game: a memo can claim any score, but it can only
+ * ever be attributed to the wallet that signed and paid for it.
+ */
+export async function fetchLeaderboard(limit = 200): Promise<LeaderboardStats> {
+  const signatures = await connection.getSignaturesForAddress(APP_MARKER, {
+    limit,
+  })
+
+  const candidates = signatures.filter(
+    (info) => !info.err && parseScoreFromMemo(info.memo) !== null,
+  )
+
+  if (candidates.length === 0) {
+    return { entries: [], players: 0, totalBaked: 0, bakes: 0 }
+  }
+
+  const transactions = await connection.getParsedTransactions(
+    candidates.map((c) => c.signature),
+    { maxSupportedTransactionVersion: 0 },
+  )
+
+  // Keep each player's highest score.
+  const best = new Map<string, LeaderboardEntry>()
+
+  transactions.forEach((tx, index) => {
+    const info = candidates[index]
+    const score = parseScoreFromMemo(info.memo)
+    if (!tx || score === null) return
+
+    const payer = tx.transaction.message.accountKeys.find((key) => key.signer)
+    if (!payer) return
+
+    const player = payer.pubkey.toBase58()
+    const current = best.get(player)
+    if (!current || score > current.score) {
+      best.set(player, {
+        player,
+        score,
+        signature: info.signature,
+        at: (info.blockTime ?? 0) * 1000,
+      })
+    }
+  })
+
+  const entries = [...best.values()].sort((a, b) => b.score - a.score)
+
+  return {
+    entries,
+    players: entries.length,
+    totalBaked: entries.reduce((sum, entry) => sum + entry.score, 0),
+    bakes: candidates.length,
+  }
 }
 
 /** Human-readable messages for the failures players actually hit. */
